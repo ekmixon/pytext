@@ -83,10 +83,8 @@ class EmbeddingList(EmbeddingBase, ModuleList):
             end = start + emb.num_emb_modules
             input = emb_input[start:end]
             # single embedding
-            if len(input) == 1:
-                # the input for the single embedding is a tuple or list of tensors
-                if isinstance(input[0], list) or isinstance(input[0], tuple):
-                    [input] = input
+            if len(input) == 1 and isinstance(input[0], (list, tuple)):
+                [input] = input
             emb_tensor = emb(*input)
             tensors.append(emb_tensor)
 

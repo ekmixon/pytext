@@ -206,7 +206,7 @@ class RoBERTaTokenLevelTensorizer(RoBERTaTensorizer):
         tokens = list(itertools.chain(*numberized_sentences))
         segment_labels = list(itertools.chain(*segment_labels))
         seq_len = len(tokens)
-        positions = [index for index in range(seq_len)]
+        positions = list(range(seq_len))
         return tokens, segment_labels, seq_len, positions, numberized_labels
 
     def tensorize(self, batch) -> Tuple[torch.Tensor, ...]:

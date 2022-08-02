@@ -48,17 +48,15 @@ class MultiLabelDecoder(DecoderBase):
         layers = []
         current_dim = in_dim
         for dim in hidden_dims or []:
-            layers.append(nn.Linear(current_dim, dim))
-            layers.append(nn.ReLU())
+            layers.extend((nn.Linear(current_dim, dim), nn.ReLU()))
             current_dim = dim
         layers.append(nn.Linear(current_dim, out_dim))
         return nn.Sequential(*layers)
 
     def forward(self, *input: torch.Tensor):
-        logits = tuple(
+        return tuple(
             self.label_mlps[x](torch.cat(input, 1)) for x in self.label_names
         )
-        return logits
 
     def get_decoder(self) -> List[nn.Module]:
         return self.label_mlps

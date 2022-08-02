@@ -10,8 +10,8 @@ ESCAPE = "\\"
 INTENT_PREFIX = "IN:"
 SLOT_PREFIX = "SL:"
 OOD_TOKEN = "outOfDomain"
-COMBINATION_INTENT_LABEL = INTENT_PREFIX + "COMBINE"
-COMBINATION_SLOT_LABEL = SLOT_PREFIX + "COMBINE"
+COMBINATION_INTENT_LABEL = f"{INTENT_PREFIX}COMBINE"
+COMBINATION_SLOT_LABEL = f"{SLOT_PREFIX}COMBINE"
 SHIFT = "SHIFT"
 REDUCE = "REDUCE"
 
@@ -193,10 +193,9 @@ class Node:
 
     def list_ancestors(self):
         ancestors = []
-        if self.parent:
-            if type(self.parent) != Root:
-                ancestors.append(self.parent)
-                ancestors += self.parent.list_ancestors()
+        if self.parent and type(self.parent) != Root:
+            ancestors.append(self.parent)
+            ancestors += self.parent.list_ancestors()
         return ancestors
 
     def validate_node(self, *args):
@@ -221,10 +220,7 @@ class Node:
         Like array slicing: For the first 3 tokens, returns 0, 3
         """
         indices = self.get_token_indices()
-        if len(indices) > 0:
-            return min(indices), max(indices) + 1
-        else:
-            return None
+        return (min(indices), max(indices) + 1) if len(indices) > 0 else None
 
     def get_token_indices(self):
         indices = []
@@ -242,7 +238,7 @@ class Node:
         """
         non_terminals = []
         for child in self.children:
-            if type(child) != Root and type(child) != Token:
+            if type(child) not in [Root, Token]:
                 non_terminals.append(child)
                 non_terminals += child.list_nonTerminals()
         return non_terminals
@@ -260,33 +256,28 @@ class Node:
         return terminals
 
     def get_info(self):
-        if type(self) == Token:
-            return Token_Info(self)
-        return Node_Info(self)
+        return Token_Info(self) if type(self) == Token else Node_Info(self)
 
     def flat_str(self):
-        string = ""
-        if type(self) == Intent or type(self) == Slot:
-            string = OPEN
+        string = OPEN if type(self) in [Intent, Slot] else ""
         if type(self) != Root:
-            string += escape_brackets(str(self.label)) + " "
+            string += f"{escape_brackets(str(self.label))} "
         if self.children:
             for child in self.children:
                 string += child.flat_str()
-        if type(self) == Intent or type(self) == Slot:
-            string += CLOSE + " "
+        if type(self) in [Intent, Slot]:
+            string += f"{CLOSE} "
         return string
 
     def children_flat_str_spans(self):
-        string = str(self.get_token_span()) + ":"
+        string = f"{str(self.get_token_span())}:"
         if self.children:
             for child in self.children:
                 string += child.flat_str()
         return string
 
     def __str__(self):
-        string = self._recursive_str("", "")
-        return string
+        return self._recursive_str("", "")
 
     def _recursive_str(self, string, spacer):
         string = spacer + str(self.label) + "\n"
@@ -308,17 +299,17 @@ class Root(Node):
     def validate_node(self, *args):
         super().validate_node(*args)
         for child in self.children:
-            if type(child) == Slot or type(child) == Root:
-                raise TypeError(
-                    "A root child must be an intent or token: " + self.label
-                )
+            if type(child) in [Slot, Root]:
+                raise TypeError(f"A root child must be an intent or token: {self.label}")
             elif self.parent is not None:
-                raise TypeError("A root should not have a parent: " + self.label)
+                raise TypeError(f"A root should not have a parent: {self.label}")
 
     def __eq__(self, other):
-        if not isinstance(other, self.__class__):
-            return False
-        return self.children == other.children
+        return (
+            self.children == other.children
+            if isinstance(other, self.__class__)
+            else False
+        )
 
 
 class Intent(Node):
@@ -328,15 +319,15 @@ class Intent(Node):
     def validate_node(self, *args):
         super().validate_node(*args)
         for child in self.children:
-            if type(child) == Intent or type(child) == Root:
-                raise TypeError(
-                    "An intent child must be a slot or token: " + self.label
-                )
+            if type(child) in [Intent, Root]:
+                raise TypeError(f"An intent child must be a slot or token: {self.label}")
 
     def __eq__(self, other):
-        if not isinstance(other, self.__class__):
-            return False
-        return self.label == other.label and self.children == other.children
+        return (
+            self.label == other.label and self.children == other.children
+            if isinstance(other, self.__class__)
+            else False
+        )
 
 
 class Slot(Node):
@@ -345,20 +336,19 @@ class Slot(Node):
 
     def validate_node(self, allow_empty_slots=True, *args):
         super().validate_node(*args)
-        if not allow_empty_slots:
-            if len(self.children) == 0:
-                raise TypeError("Empty slot found: " + self.label)
+        if not allow_empty_slots and len(self.children) == 0:
+            raise TypeError(f"Empty slot found: {self.label}")
 
         for child in self.children:
-            if type(child) == Slot or type(child) == Root:
-                raise TypeError(
-                    "An slot child must be an intent or token: " + self.label
-                )
+            if type(child) in [Slot, Root]:
+                raise TypeError(f"An slot child must be an intent or token: {self.label}")
 
     def __eq__(self, other):
-        if not isinstance(other, self.__class__):
-            return False
-        return self.label == other.label and self.children == other.children
+        return (
+            self.label == other.label and self.children == other.children
+            if isinstance(other, self.__class__)
+            else False
+        )
 
 
 class Token(Node):
@@ -385,9 +375,11 @@ class Token(Node):
         self.parent = None
 
     def __eq__(self, other):
-        if not isinstance(other, self.__class__):
-            return False
-        return self.label == other.label and self.index == other.index
+        return (
+            self.label == other.label and self.index == other.index
+            if isinstance(other, self.__class__)
+            else False
+        )
 
 
 class Token_Info:
@@ -404,28 +396,26 @@ class Token_Info:
         self.ancestors = [a.label for a in node.list_ancestors()]
 
         self.prior_token = None
-        prior = node.get_prior_token()
-        if prior:
+        if prior := node.get_prior_token():
             self.prior_token = prior.label
 
         self.next_token = None
-        next_token = node.get_next_token()
-        if next_token:
+        if next_token := node.get_next_token():
             self.next_token = next_token.label
 
     def get_parent(self, node):
-        if node.parent and type(node.parent) != Root:
-            return node.parent.label
-        return None
+        return node.parent.label if node.parent and type(node.parent) != Root else None
 
     def __str__(self):
-        result = []
-        result.append("Token Info:")
-        result.append("Token Word: " + self.token_word)
-        result.append("Previous Token: " + str(self.prior_token))
-        result.append("Next Token: " + str(self.next_token))
-        result.append("Parent: " + str(self.parent_label))
-        result.append("Ancestors: " + ", ".join(self.ancestors))
+        result = [
+            "Token Info:",
+            f"Token Word: {self.token_word}",
+            f"Previous Token: {str(self.prior_token)}",
+            f"Next Token: {str(self.next_token)}",
+            f"Parent: {str(self.parent_label)}",
+            "Ancestors: " + ", ".join(self.ancestors),
+        ]
+
         return "\n".join(result)
 
 
@@ -442,18 +432,13 @@ class Node_Info:
         self.parent_label = self.get_parent(node)
 
         # only look at slot or intent children
-        self.children = []
-        for a in node.children:
-            if (type(a) == Slot) or (type(a) == Intent):
-                self.children.append(a.label)
-
+        self.children = [a.label for a in node.children if type(a) in [Slot, Intent]]
         self.token_indices = node.get_token_indices()
         self.ancestors = [a.label for a in node.list_ancestors()]
         # This is only non-temrinal descendents. Did you want tokens too?
         self.descendents = [d.label for d in node.list_nonTerminals()]
         self.prior_token = None
-        prior = node.get_prior_token()
-        if prior:
+        if prior := node.get_prior_token():
             self.prior_token = prior.label
         if type(node) == Token:
             self.label_type = "TOKEN"
@@ -466,31 +451,29 @@ class Node_Info:
         self.same_span = self.get_same_span(node)
 
     def get_same_span(self, node):
-        if node.parent:
-            if set(node.parent.list_tokens()) == set(node.list_tokens()):
-                return True
-        return False
+        return bool(
+            node.parent
+            and set(node.parent.list_tokens()) == set(node.list_tokens())
+        )
 
     def get_parent(self, node):
-        if node.parent and type(node.parent) != Root:
-            return node.parent.label
-        return None
+        return node.parent.label if node.parent and type(node.parent) != Root else None
 
     def __str__(self):
-        result = []
-        result.append("Info:")
-        result.append("Label: " + self.label)
-        result.append("Tokens: " + " ".join(self.tokens))
-        result.append(
-            "Token Indicies: " + ", ".join([str(i) for i in self.token_indices])
-        )
-        result.append("Prior Token: " + str(self.prior_token))
-        result.append("Parent: " + str(self.parent_label))
-        result.append("Children: " + ", ".join(self.children))
-        result.append("Ancestors: " + ", ".join(self.ancestors))
-        result.append("Descendents: " + ", ".join(self.descendents))
-        result.append("Label Type: " + str(self.label_type))
-        result.append("Same Span: " + str(self.same_span))
+        result = [
+            "Info:",
+            f"Label: {self.label}",
+            "Tokens: " + " ".join(self.tokens),
+            "Token Indicies: " + ", ".join([str(i) for i in self.token_indices]),
+            f"Prior Token: {str(self.prior_token)}",
+            f"Parent: {str(self.parent_label)}",
+            "Children: " + ", ".join(self.children),
+            "Ancestors: " + ", ".join(self.ancestors),
+            "Descendents: " + ", ".join(self.descendents),
+            f"Label Type: {str(self.label_type)}",
+            f"Same Span: {str(self.same_span)}",
+        ]
+
         return "\n".join(result)
 
 
@@ -509,8 +492,10 @@ class Tree:
                 self.validate_tree()
             except ValueError as v:
                 raise ValueError(
-                    "Tree validation failed: {}. \n".format(v)
-                    + "Utterance is: {}".format(utterance)
+                    (
+                        f"Tree validation failed: {v}. \n"
+                        + f"Utterance is: {utterance}"
+                    )
                 )
 
     def validate_tree(self, allow_empty_slots=True):
@@ -521,7 +506,7 @@ class Tree:
         """
 
         try:
-            if self.combination_labels and not len(self.root.children) == 1:
+            if self.combination_labels and len(self.root.children) != 1:
                 raise ValueError(
                     """Root should always have one child and not {}.
                     Look into {} and {}""".format(
@@ -532,9 +517,7 @@ class Tree:
                 )
             self.recursive_validation(self.root, allow_empty_slots)
         except TypeError as t:
-            raise ValueError(
-                "Failed validation for {}".format(self.root) + "\n" + str(t)
-            )
+            raise ValueError(f"Failed validation for {self.root}" + "\n" + str(t))
 
     def recursive_validation(self, node, *args):
         node.validate_node(*args)
@@ -574,9 +557,7 @@ class Tree:
 
     def _depth(self, n):
         if n.children:
-            depths = []
-            for c in n.children:
-                depths.append(self._depth(c))
+            depths = [self._depth(c) for c in n.children]
             return max(depths) + 1
         else:
             return 0
@@ -592,7 +573,7 @@ class Tree:
             return
 
         for child in node.children:
-            if not type(child) is Token:
+            if type(child) is not Token:
                 actions.append(child.label)
                 self._to_actions(child, actions)
                 actions.append(REDUCE)
@@ -610,9 +591,7 @@ class Tree:
         return str(self)
 
     def __eq__(self, other):
-        if not isinstance(other, self.__class__):
-            return False
-        return self.root == other.root
+        return self.root == other.root if isinstance(other, self.__class__) else False
 
 
 class TreeBuilder:

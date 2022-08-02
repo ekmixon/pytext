@@ -75,20 +75,19 @@ def is_valid_slot(slot):
 def get_all_slots(slot_vals, query_vals):
     all_slots = []
     open_slot = []
-    for _idx, (slot, query) in enumerate(zip(slot_vals, query_vals)):
-        if open_slot:
-            if not is_valid_slot(slot[0]):
-                slot_beg_index = open_slot[0][1][0]
-                slot_end_index = open_slot[-1][1][1]
-                all_slots.append(
-                    str(slot_beg_index)
-                    + ":"
-                    + str(slot_end_index)
-                    + ":"
-                    + extract_slot_name(open_slot[0][0])
-                )
-                open_slot.clear()
-                continue
+    for slot, query in zip(slot_vals, query_vals):
+        if open_slot and not is_valid_slot(slot[0]):
+            slot_beg_index = open_slot[0][1][0]
+            slot_end_index = open_slot[-1][1][1]
+            all_slots.append(
+                str(slot_beg_index)
+                + ":"
+                + str(slot_end_index)
+                + ":"
+                + extract_slot_name(open_slot[0][0])
+            )
+            open_slot.clear()
+            continue
         if is_valid_slot(slot[0]):
             open_slot.append([slot[0], query[1]])
     return ",".join(all_slots)
@@ -101,18 +100,18 @@ def process_train_set(
     validation_file_name = os.path.join(output_directory, "atis.processed.val.csv")
 
     with PathManager.open(
-        os.path.join(download_folder, "atis.train.intent.csv"), "r"
-    ) as intents, PathManager.open(
-        os.path.join(download_folder, "atis.train.slots.csv"), "r"
-    ) as slots, PathManager.open(
-        os.path.join(download_folder, "atis.train.query.csv"), "r"
-    ) as queries, PathManager.open(
-        train_file_name, "w"
-    ) as train_file, PathManager.open(
-        validation_file_name, "w"
-    ) as validation_file:
+            os.path.join(download_folder, "atis.train.intent.csv"), "r"
+        ) as intents, PathManager.open(
+            os.path.join(download_folder, "atis.train.slots.csv"), "r"
+        ) as slots, PathManager.open(
+            os.path.join(download_folder, "atis.train.query.csv"), "r"
+        ) as queries, PathManager.open(
+            train_file_name, "w"
+        ) as train_file, PathManager.open(
+            validation_file_name, "w"
+        ) as validation_file:
 
-        for _idx, (intent, slot, query) in enumerate(zip(intents, slots, queries)):
+        for intent, slot, query in zip(intents, slots, queries):
             # There is always one intent for an utterance
             intent_string = stringify(intent, intent_vocab)[0][0]
             slot_vals = stringify(slot, slots_vocab)
@@ -137,15 +136,15 @@ def process_test_set(
     test_file_name = os.path.join(output_directory, "atis.processed.test.csv")
 
     with PathManager.open(
-        os.path.join(download_folder, "atis.test.intent.csv"), "r"
-    ) as intents, PathManager.open(
-        os.path.join(download_folder, "atis.test.slots.csv"), "r"
-    ) as slots, PathManager.open(
-        os.path.join(download_folder, "atis.test.query.csv"), "r"
-    ) as queries, PathManager.open(
-        test_file_name, "w"
-    ) as test_file:
-        for _idx, (intent, slot, query) in enumerate(zip(intents, slots, queries)):
+            os.path.join(download_folder, "atis.test.intent.csv"), "r"
+        ) as intents, PathManager.open(
+            os.path.join(download_folder, "atis.test.slots.csv"), "r"
+        ) as slots, PathManager.open(
+            os.path.join(download_folder, "atis.test.query.csv"), "r"
+        ) as queries, PathManager.open(
+            test_file_name, "w"
+        ) as test_file:
+        for intent, slot, query in zip(intents, slots, queries):
             # There is always one intent for an utterance
             intent_string = stringify(intent, intent_vocab)[0][0]
             slot_vals = stringify(slot, slots_vocab)

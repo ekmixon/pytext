@@ -30,10 +30,10 @@ PERPLEXITY_FUNC_MAP = {
 
 
 def get_perplexity_func(perplexity_type):
-    func = PERPLEXITY_FUNC_MAP.get(perplexity_type, None)
-    if not func:
+    if func := PERPLEXITY_FUNC_MAP.get(perplexity_type, None):
+        return func
+    else:
         raise NotImplementedError
-    return func
 
 
 class LanguageModelChannel(FileChannel):
@@ -136,13 +136,10 @@ class LanguageModelMetricReporter(MetricReporter):
     def batch_context(self, raw_batch, batch):
         context = {}
         if any(self.RAW_TEXT_COLUMN in row for row in raw_batch):
-            context.update(
-                {
-                    self.UTTERANCE_COLUMN: [
-                        row.get(self.RAW_TEXT_COLUMN) for row in raw_batch
-                    ]
-                }
-            )
+            context[self.UTTERANCE_COLUMN] = [
+                row.get(self.RAW_TEXT_COLUMN) for row in raw_batch
+            ]
+
         return context
 
     def compute_scores(self, logits, targets):
@@ -175,7 +172,7 @@ class LanguageModelMetricReporter(MetricReporter):
             if non_padding_score_per_sentence.numel() > 0:
                 non_padding_scores_all_sentences.append(non_padding_score_per_sentence)
 
-        if len(non_padding_scores_all_sentences) == 0:
+        if not non_padding_scores_all_sentences:
             return
 
         return map(lambda x: _compute_score(x).item(), non_padding_scores_all_sentences)

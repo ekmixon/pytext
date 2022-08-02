@@ -76,7 +76,7 @@ class WordTaggingMetricReporter(MetricReporter):
                     get_slots(
                         merge_token_labels_to_slot(
                             token_range,
-                            self.process_pred(pred[0:seq_len]),
+                            self.process_pred(pred[:seq_len]),
                             self.use_bio_labels,
                         )
                     ),
@@ -129,29 +129,27 @@ class MultiLabelSequenceTaggingMetricReporter(MetricReporter):
         self.aggregate_tuple_data(self.all_scores, batch_scores)
 
     def calculate_metric(self):
-        list_score_pred_expect = []
-        for label_idx, _ in enumerate(self.label_names):
-            list_score_pred_expect.append(
-                list(
-                    itertools.chain.from_iterable(
-                        (
-                            LabelPrediction(s, p, e)
-                            for s, p, e in zip(
-                                scores[label_idx], pred[label_idx], expect[label_idx]
-                            )
-                            if e != self.pad_idx[label_idx]
+        list_score_pred_expect = [
+            list(
+                itertools.chain.from_iterable(
+                    (
+                        LabelPrediction(s, p, e)
+                        for s, p, e in zip(
+                            scores[label_idx], pred[label_idx], expect[label_idx]
                         )
-                        for scores, pred, expect in zip(
-                            self.all_scores, self.all_preds, self.all_targets
-                        )
+                        if e != self.pad_idx[label_idx]
+                    )
+                    for scores, pred, expect in zip(
+                        self.all_scores, self.all_preds, self.all_targets
                     )
                 )
             )
+            for label_idx, _ in enumerate(self.label_names)
+        ]
 
-        metrics = compute_multi_label_multi_class_soft_metrics(
+        return compute_multi_label_multi_class_soft_metrics(
             list_score_pred_expect, self.label_names, self.label_vocabs
         )
-        return metrics
 
     def batch_context(self, raw_batch, batch):
         return {}
@@ -232,12 +230,12 @@ def convert_bio_to_spans(bio_sequence: List[str]) -> List[Span]:
         if bio_sequence[t].startswith("I"):
             if cur_start is None:
                 newseq = bio_sequence[:]
-                newseq[t] = "B" + newseq[t][1:]
+                newseq[t] = f"B{newseq[t][1:]}"
                 return convert_bio_to_spans(newseq)
             continuation_label = re.sub("^I-?", "", bio_sequence[t])
             if continuation_label != cur_label:
                 newseq = bio_sequence[:]
-                newseq[t] = "B" + newseq[t][1:]
+                newseq[t] = f"B{newseq[t][1:]}"
                 return convert_bio_to_spans(newseq)
 
     # should have exited for last span ending at end by now

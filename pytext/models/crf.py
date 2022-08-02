@@ -65,7 +65,7 @@ class CRF(nn.Module):
         denominator = self._compute_log_partition_function(emissions, mask)
 
         llh = numerator - denominator
-        return llh if not reduce else torch.mean(llh)
+        return torch.mean(llh) if reduce else llh
 
     @jit.export
     def decode(self, emissions: torch.Tensor, seq_lens: torch.Tensor) -> torch.Tensor:
@@ -78,8 +78,7 @@ class CRF(nn.Module):
             seq_lens: Length of each input.
         """
         mask = self._make_mask_from_seq_lens(seq_lens)
-        result = self._viterbi_decode(emissions, mask)
-        return result
+        return self._viterbi_decode(emissions, mask)
 
     def _compute_joint_llh(
         self, emissions: torch.Tensor, tags: torch.Tensor, mask: torch.Tensor
@@ -256,20 +255,17 @@ class CRF(nn.Module):
         return torch.flip(all_labels, [1])
 
     def _make_mask_from_targets(self, targets):
-        mask = targets.ne(self.ignore_index).float()
-        return mask
+        return targets.ne(self.ignore_index).float()
 
     def _make_mask_from_seq_lens(self, seq_lens):
         seq_lens = seq_lens.view(-1, 1)
         max_len = torch.max(seq_lens)
         range_tensor = torch.arange(max_len, device=seq_lens.device).unsqueeze(0)
         range_tensor = range_tensor.expand(seq_lens.size(0), range_tensor.size(1))
-        mask = (range_tensor < seq_lens).float()
-        return mask
+        return (range_tensor < seq_lens).float()
 
     def _mask_tensor(self, score_tensor, mask_condition, mask_value):
-        masked_tensor = torch.where(mask_condition, mask_value, score_tensor)
-        return masked_tensor
+        return torch.where(mask_condition, mask_value, score_tensor)
 
     def export_to_caffe2(self, workspace, init_net, predict_net, logits_output_name):
         """

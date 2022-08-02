@@ -141,6 +141,5 @@ def batch_predict_caffe2_model(
         task,
         cache_size,
     )
-    logging.info(f"Model loaded, start testing")
-    predictions = [predictor(example) for example in data_source.test]
-    return predictions
+    logging.info("Model loaded, start testing")
+    return [predictor(example) for example in data_source.test]

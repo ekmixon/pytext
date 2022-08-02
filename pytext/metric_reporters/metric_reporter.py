@@ -103,7 +103,7 @@ class MetricReporter(Component):
         self.aggregate_targets(targets, context)
         self.aggregate_scores(scores)
         for key, val in context.items():
-            if not (isinstance(val, torch.Tensor) or isinstance(val, List)):
+            if not isinstance(val, (torch.Tensor, List)):
                 continue
             if key not in self.all_context:
                 self.all_context[key] = []
@@ -182,9 +182,7 @@ class MetricReporter(Component):
             ]
         }
         if DatasetFieldName.NUM_TOKENS in batch:
-            context.update(
-                {DatasetFieldName.NUM_TOKENS: batch[DatasetFieldName.NUM_TOKENS]}
-            )
+            context[DatasetFieldName.NUM_TOKENS] = batch[DatasetFieldName.NUM_TOKENS]
 
         return context
 
@@ -316,9 +314,7 @@ class MetricReporter(Component):
 
         new = self.get_model_select_metric(new_metric)
         old = self.get_model_select_metric(old_metric)
-        if new == old:
-            return False
-        return (new < old) == self.lower_is_better
+        return False if new == old else (new < old) == self.lower_is_better
 
     def get_gradients(self):
         return self.all_gradients

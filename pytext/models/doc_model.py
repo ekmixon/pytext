@@ -264,9 +264,9 @@ class DocModel(Model):
 
         if isinstance(loss, BinaryCrossEntropyLoss):
             output_layer_cls = BinaryClassificationOutputLayer
-        elif isinstance(loss, MultiLabelSoftMarginLoss):
-            output_layer_cls = MultiLabelOutputLayer
-        elif isinstance(loss, BinaryCrossEntropyWithLogitsLoss):
+        elif isinstance(
+            loss, (MultiLabelSoftMarginLoss, BinaryCrossEntropyWithLogitsLoss)
+        ):
             output_layer_cls = MultiLabelOutputLayer
         else:
             output_layer_cls = MulticlassOutputLayer

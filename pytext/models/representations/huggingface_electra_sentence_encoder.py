@@ -70,13 +70,13 @@ class HuggingFaceElectraSentenceEncoder(TransformerSentenceEncoderBase):
                         load(child, prefix + name + ".")
 
             load(model, prefix="" if hasattr(model, "electra") else "electra.")
-            if len(missing_keys) > 0:
+            if missing_keys:
                 print(
                     "Weights of {} not initialized from pretrained model: {}".format(
                         model.__class__.__name__, missing_keys
                     )
                 )
-            if len(unexpected_keys) > 0:
+            if unexpected_keys:
                 print(
                     "Weights from pretrained model not used in {}: {}".format(
                         model.__class__.__name__, unexpected_keys

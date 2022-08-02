@@ -548,7 +548,7 @@ class TensorizersTest(unittest.TestCase):
                     [0.0, 0.0, 0.8, 0.2, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0], weights
                 )
                 self.assertEqual([1, 2, 1, 1, 1], lens)
-            if i == 1:
+            elif i == 1:
                 idx, weights, lens = tensorizer.numberize(row)
                 self.assertEqual([1, 1, 5, 1, 6, 1], idx)
                 self.assertEqual([0.0, 0.0, 1.0, 0.0, 1.0, 0.0], weights)

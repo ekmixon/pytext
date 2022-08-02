@@ -72,8 +72,7 @@ class DenseRetrievalDataSource(DataSource):
 
     def read_file(self, fname):
         if self.use_cache and fname in self.cache:
-            for row in self.cache[fname]:
-                yield row
+            yield from self.cache[fname]
         else:
             with PathManager.open(fname) as infile:
                 # Code pointer: https://fburl.com/yv8osgvo

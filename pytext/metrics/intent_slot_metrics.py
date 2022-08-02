@@ -375,10 +375,12 @@ def compute_top_intent_accuracy(frame_pairs: Sequence[FramePredictionPair]) -> f
     Returns:
         Prediction accuracy of the top-level intent.
     """
-    num_correct = 0
     num_samples = len(frame_pairs)
-    for (predicted_frame, expected_frame) in frame_pairs:
-        num_correct += int(predicted_frame.label == expected_frame.label)
+    num_correct = sum(
+        int(predicted_frame.label == expected_frame.label)
+        for predicted_frame, expected_frame in frame_pairs
+    )
+
     return safe_division(num_correct, num_samples)
 
 
@@ -393,10 +395,12 @@ def compute_frame_accuracy(frame_pairs: Sequence[FramePredictionPair]) -> float:
         Frame accuracy. For a prediction, frame accuracy is achieved if the entire tree
         structure of the predicted frame matches that of the gold frame.
     """
-    num_correct = 0
     num_samples = len(frame_pairs)
-    for (predicted_frame, expected_frame) in frame_pairs:
-        num_correct += int(predicted_frame == expected_frame)
+    num_correct = sum(
+        int(predicted_frame == expected_frame)
+        for predicted_frame, expected_frame in frame_pairs
+    )
+
     return safe_division(num_correct, num_samples)
 
 
@@ -468,12 +472,10 @@ def compute_frame_accuracies_by_depth(
     for frame_pair in frame_pairs:
         depth = frame_pair.expected_frame.get_depth()
         frame_pairs_by_depth[depth].append(frame_pair)
-    frame_accuracies_by_depth: FrameAccuraciesByDepth = {}
-    for depth, pairs in frame_pairs_by_depth.items():
-        frame_accuracies_by_depth[depth] = FrameAccuracy(
-            len(pairs), compute_frame_accuracy(pairs)
-        )
-    return frame_accuracies_by_depth
+    return {
+        depth: FrameAccuracy(len(pairs), compute_frame_accuracy(pairs))
+        for depth, pairs in frame_pairs_by_depth.items()
+    }
 
 
 def compute_percent_invalid_trees(frame_pairs: Sequence[FramePredictionPair]) -> float:
@@ -487,10 +489,12 @@ def compute_percent_invalid_trees(frame_pairs: Sequence[FramePredictionPair]) ->
         Percent of invalid trees. A tree is invalid if its frame label matches
         INVALID_TREE_STR
     """
-    num_invalid = 0
     num_samples = len(frame_pairs)
-    for (predicted_frame, _) in frame_pairs:
-        num_invalid += int(predicted_frame.label == INVALID_TREE_INTENT)
+    num_invalid = sum(
+        int(predicted_frame.label == INVALID_TREE_INTENT)
+        for predicted_frame, _ in frame_pairs
+    )
+
     return safe_division(num_invalid, num_samples)
 
 
@@ -508,25 +512,27 @@ def compute_percent_trees_wrong_label(
         Percent of trees with incorrect labels. These include valid predicted trees of
         correct strucure but incorrect IN/SL labels.
     """
-    num_incorrect = 0
     num_samples = len(frame_pairs)
-    for (predicted_frame, expected_frame) in frame_pairs:
-        # For trees with incorrect IN/SL labels,
-        # 1. tree is valid
-        # 2. structure is correct
-        # 3. there is at lease 1 incorect label
-        num_incorrect += int(
+    num_incorrect = sum(
+        int(
             predicted_frame.label != INVALID_TREE_INTENT
             and _check_node(predicted_frame, expected_frame, check_label=False)
-            and not _check_node(predicted_frame, expected_frame, check_label=True)
+            and not _check_node(
+                predicted_frame, expected_frame, check_label=True
+            )
         )
+        for predicted_frame, expected_frame in frame_pairs
+    )
+
     return safe_division(num_incorrect, num_samples)
 
 
 def _get_node_children(node: Node) -> List[Node]:
-    if not node.children:
-        return []
-    return sorted(node.children, key=lambda node_child: node_child.span.start)
+    return (
+        sorted(node.children, key=lambda node_child: node_child.span.start)
+        if node.children
+        else []
+    )
 
 
 def _check_node(predicted_node: Node, target_node: Node, check_label: bool) -> bool:
@@ -536,13 +542,12 @@ def _check_node(predicted_node: Node, target_node: Node, check_label: bool) -> b
     target_children = _get_node_children(target_node)
     if len(predicted_children) != len(target_children):
         return False
-    for (p_child_node, t_child_node) in zip(
-        predicted_children,
-        target_children,
-    ):
-        if not _check_node(p_child_node, t_child_node, check_label):
-            return False
-    return True
+    return all(
+        _check_node(p_child_node, t_child_node, check_label)
+        for p_child_node, t_child_node in zip(
+            predicted_children, target_children
+        )
+    )
 
 
 def compute_all_metrics(

@@ -77,10 +77,10 @@ class DisjointMultitaskData(Data):
         to filter examples to the appropriate tasks."""
         if data_source is not None:
             # means being called in test workflow
-            for batch in self.data_dict[self.test_key].batches(
+            yield from self.data_dict[self.test_key].batches(
                 stage, data_source, load_early
-            ):
-                yield batch
+            )
+
         else:
             all_batches = {
                 name: task.batches(stage, load_early=load_early)

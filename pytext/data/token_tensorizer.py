@@ -58,20 +58,12 @@ class TokenTensorizerScriptImpl(TensorizerScriptImpl):
     def get_texts_by_index(
         self, texts: Optional[List[List[str]]], index: int
     ) -> Optional[str]:
-        if texts is None or len(texts) == 0:
-            return None
-
-        # TokenTensorizer only works with a single text per row, stick with that
-        return texts[index][0]
+        return None if texts is None or len(texts) == 0 else texts[index][0]
 
     def get_tokens_by_index(
         self, tokens: Optional[List[List[List[str]]]], index: int
     ) -> Optional[List[str]]:
-        if tokens is None or len(tokens) == 0:
-            return None
-
-        # TokenTensorizer only works with a single text per row, stick with that
-        return tokens[index][0]
+        return None if tokens is None or len(tokens) == 0 else tokens[index][0]
 
     def _lookup_tokens_1d(
         self, tokens: List[Tuple[str, int, int]]
@@ -107,10 +99,7 @@ class TokenTensorizerScriptImpl(TensorizerScriptImpl):
 
         token_indices, token_starts, token_ends = self._lookup_tokens_1d(text_tokens)
 
-        token_ranges: List[Tuple[int, int]] = []
-
-        for s, e in zip(token_starts, token_ends):
-            token_ranges.append((s, e))
+        token_ranges: List[Tuple[int, int]] = list(zip(token_starts, token_ends))
 
         return token_indices, len(token_indices), token_ranges
 

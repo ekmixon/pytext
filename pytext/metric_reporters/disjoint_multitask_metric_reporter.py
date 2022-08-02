@@ -39,7 +39,7 @@ class DisjointMultitaskMetricReporter(MetricReporter):
         super().__init__(None)
         self.reporters = reporters
         self.target_task_name = target_task_name or ""
-        self.target_reporter = self.reporters.get(self.target_task_name, None)
+        self.target_reporter = self.reporters.get(self.target_task_name)
         self.loss_weights = loss_weights
         self.use_subtask_select_metric = use_subtask_select_metric
 
@@ -50,7 +50,7 @@ class DisjointMultitaskMetricReporter(MetricReporter):
     def batch_context(self, raw_batch, batch):
         context = {BatchContext.TASK_NAME: batch[BatchContext.TASK_NAME]}
         reporter = self.reporters[context[BatchContext.TASK_NAME]]
-        context.update(reporter.batch_context(raw_batch, batch))
+        context |= reporter.batch_context(raw_batch, batch)
         return context
 
     def add_batch_stats(

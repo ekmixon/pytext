@@ -64,11 +64,12 @@ def pad(nested_lists, pad_token, pad_shape=None):
 
 def pad_and_tensorize(batch, pad_token=0, pad_shape=None, dtype=torch.long):
     batch = list(batch)
-    if not batch:
-        return torch.Tensor()
-
-    return cuda.tensor(
-        pad(batch, pad_token=pad_token, pad_shape=pad_shape), dtype=dtype
+    return (
+        cuda.tensor(
+            pad(batch, pad_token=pad_token, pad_shape=pad_shape), dtype=dtype
+        )
+        if batch
+        else torch.Tensor()
     )
 
 
@@ -105,7 +106,7 @@ class Vocabulary:
         self._vocab = vocab_list
         self.counts = counts
         self.idx = {word: i for i, word in enumerate(vocab_list)}
-        self.names = {i: word for i, word in enumerate(vocab_list)}
+        self.names = dict(enumerate(vocab_list))
         self.unk_token = unk_token
         self.pad_token = pad_token
         self.bos_token = bos_token
@@ -173,16 +174,15 @@ class Vocabulary:
 
         if not should_iter(nested_values):
             return lookup(nested_values)
-        else:
-            indices = []
-            unks = 0
-            total = 0
-            for value in nested_values:
-                v, unk, t = self.lookup_all_internal(value)
-                indices.append(v)
-                unks += unk
-                total += t
-            return indices, unks, total
+        indices = []
+        unks = 0
+        total = 0
+        for value in nested_values:
+            v, unk, t = self.lookup_all_internal(value)
+            indices.append(v)
+            unks += unk
+            total += t
+        return indices, unks, total
 
     def get_unk_index(self, value=None):
         if value is None:
@@ -257,10 +257,8 @@ class VocabBuilder:
         if should_iter(values):
             for value in values:
                 self.add_all(value)
-        else:
-            # Don't add None or empty
-            if values not in [None, ""]:
-                self.add(values)
+        elif values not in [None, ""]:
+            self.add(values)
 
     def add(self, value) -> None:
         """Count a single value in the vocabulary."""

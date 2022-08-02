@@ -346,9 +346,11 @@ def _get_prediction_from_scores(
         sentence_response: List[Dict[str, float]] = []
         for word_scores in sentence_scores.chunk(len(sentence_scores)):
             word_scores = word_scores.squeeze(0)
-            word_response: Dict[str, float] = {}
-            for i in range(len(classes)):
-                word_response[classes[i]] = float(word_scores[i].item())
+            word_response: Dict[str, float] = {
+                classes[i]: float(word_scores[i].item())
+                for i in range(len(classes))
+            }
+
             sentence_response.append(word_response)
         results.append(sentence_response)
     return results

@@ -42,12 +42,12 @@ class DynamicPoolingBatcherTest(unittest.TestCase):
         batcher = LinearDynamicPoolingBatcher.from_config(batcher_config)
 
         # epoch 1
-        batches = [item for item in batcher.batchify(data)]
+        batches = list(batcher.batchify(data))
         self.assertEqual(len(batches[0].raw_data), 32)
 
         # epoch 2
         # new size ()(256-32) / 5) + 32 = 76.8 ~ 77
-        batches = [item for item in batcher.batchify(data)]
+        batches = list(batcher.batchify(data))
         self.assertEqual(len(batches[0].raw_data), 77)
 
     def test_exponential_scheduler(self):
@@ -73,12 +73,12 @@ class DynamicPoolingBatcherTest(unittest.TestCase):
         batcher = ExponentialDynamicPoolingBatcher.from_config(batcher_config)
 
         # epoch 1
-        batches = [item for item in batcher.batchify(data)]
+        batches = list(batcher.batchify(data))
         self.assertEqual(len(batches[0].raw_data), 32)
 
         # epoch 2
         # new size 32 * 2^1 = 64
-        batches = [item for item in batcher.batchify(data)]
+        batches = list(batcher.batchify(data))
         self.assertEqual(len(batches[0].raw_data), 64)
 
     def test_batch_size_greater_than_data(self):
@@ -104,12 +104,12 @@ class DynamicPoolingBatcherTest(unittest.TestCase):
         batcher = ExponentialDynamicPoolingBatcher.from_config(batcher_config)
 
         # epoch 1
-        batches = [item for item in batcher.batchify(data)]
+        batches = list(batcher.batchify(data))
         self.assertEqual(len(batches[0].raw_data), 32)
 
         # epoch 2
         # new size 32 * 2^1 = 64 / 8 = 8
-        batches = [item for item in batcher.batchify(data)]
+        batches = list(batcher.batchify(data))
         self.assertEqual(len(batches[0].raw_data), 50)
 
     def end_of_scheduler(self):
@@ -135,15 +135,15 @@ class DynamicPoolingBatcherTest(unittest.TestCase):
         batcher = ExponentialDynamicPoolingBatcher.from_config(batcher_config)
 
         # epoch 1
-        batches = [item for item in batcher.batchify(data)]
+        batches = list(batcher.batchify(data))
         self.assertEqual(len(batches[0].raw_data), 32)
 
         # pass N epochs
         no_op_epochs = 4
-        _ = [[item for item in batcher.batchify(data)] for _ in range(no_op_epochs)]
+        _ = [list(batcher.batchify(data)) for _ in range(no_op_epochs)]
 
         # after period is passed, batch size should be max batch size
-        batches = [item for item in batcher.batchify(data)]
+        batches = list(batcher.batchify(data))
         self.assertEqual(len(batches[0].raw_data), 256)
 
     def test_step_size(self):
@@ -169,19 +169,19 @@ class DynamicPoolingBatcherTest(unittest.TestCase):
         batcher = ExponentialDynamicPoolingBatcher.from_config(batcher_config)
 
         # epoch 1
-        batches = [item for item in batcher.batchify(data)]
+        batches = list(batcher.batchify(data))
         self.assertEqual(len(batches[0].raw_data), 32)
 
         # epoch 2
         # no op on batch size
-        batches = [item for item in batcher.batchify(data)]
+        batches = list(batcher.batchify(data))
         self.assertEqual(len(batches[0].raw_data), 32)
 
         # epoch 3
-        batches = [item for item in batcher.batchify(data)]
+        batches = list(batcher.batchify(data))
         self.assertEqual(len(batches[0].raw_data), 64)
 
         # epoch 4
         # no op on batch size
-        batches = [item for item in batcher.batchify(data)]
+        batches = list(batcher.batchify(data))
         self.assertEqual(len(batches[0].raw_data), 64)

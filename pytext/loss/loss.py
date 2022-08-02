@@ -224,14 +224,9 @@ class MultiLabelSoftMarginLoss(Loss):
         output of the previous function be already a FloatTensor.
         """
 
-        #  default: equal weight for each class
-        #  the losses are averaged over observations for each mini-batch
-
-        loss = F.multilabel_soft_margin_loss(
+        return F.multilabel_soft_margin_loss(
             precision.maybe_float(m_out), n_hot_targets, reduction="mean"
         )
-
-        return loss
 
 
 class AUCPRHingeLoss(nn.Module, Loss):

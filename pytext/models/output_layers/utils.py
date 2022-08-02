@@ -21,7 +21,6 @@ class OutputLayerUtils:
         Utility method to generate additional blobs for human readable result for
         models that use explicit labels.
         """
-        res = []
         tmp_out_score = predict_net.Log(probability_out)
         label_scores = predict_net.Split(
             tmp_out_score, label_names, axis=model_out.dim() - 1
@@ -30,9 +29,10 @@ class OutputLayerUtils:
         # Make sure label_scores is iterable
         if not isinstance(label_scores, tuple):
             label_scores = (label_scores,)
-        for name, label_score in zip(label_names, label_scores):
-            res.append(predict_net.Copy(label_score, "{}:{}".format(output_name, name)))
-        return res
+        return [
+            predict_net.Copy(label_score, f"{output_name}:{name}")
+            for name, label_score in zip(label_names, label_scores)
+        ]
 
 
 def query_word_reprs(encoder_repr: Tensor, token_indices: Tensor) -> Tensor:

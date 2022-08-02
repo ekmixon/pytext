@@ -318,5 +318,4 @@ class NaturalBatchSampler(RandomizedBatchSampler):
     def batchify(self, iterators: Dict[str, Iterator]):
         if self.iterator_names is None or self.iterator_probs is None:
             self._initialize_iterate_probs_from_counts(iterators=iterators)
-        for batch in super().batchify(iterators=iterators):
-            yield batch
+        yield from super().batchify(iterators=iterators)

@@ -201,12 +201,12 @@ class PoolingBatcher(Batcher):
 
 def pad_and_tensorize_batches(tensorizers, batches):
     for raw_batch, numberized_batch in batches:
-        tensor_dict = {}
-        for name, tensorizer in tensorizers.items():
-            if isinstance(tensorizer, MetricTensorizer):
-                tensor_dict[name] = tensorizer.tensorize(numberized_batch)
-            else:
-                tensor_dict[name] = tensorizer.tensorize(numberized_batch[name])
+        tensor_dict = {
+            name: tensorizer.tensorize(numberized_batch)
+            if isinstance(tensorizer, MetricTensorizer)
+            else tensorizer.tensorize(numberized_batch[name])
+            for name, tensorizer in tensorizers.items()
+        }
 
         yield raw_batch, tensor_dict
 
@@ -351,8 +351,7 @@ class Data(Component):
     def cache(self, numberized_rows, stage):
         if stage in self.cache_mutex:
             # already have generator caching the numberized data
-            for numberized_row in numberized_rows:
-                yield numberized_row
+            yield from numberized_rows
         else:
             self.cache_mutex[stage] = True
             result = []

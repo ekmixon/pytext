@@ -211,10 +211,11 @@ class WordPieceTokenizer(Tokenizer):
             start = token.start
             for sub_token in self.wordpiece_tokenizer.tokenize(token.value):
                 piece_len = (
-                    len(sub_token)
-                    if not sub_token.startswith("##")
-                    else (len(sub_token) - 2)  # account for ##
+                    len(sub_token) - 2
+                    if sub_token.startswith("##")
+                    else len(sub_token)
                 )
+
                 if sub_token == "[UNK]":
                     # this fixes the bug wherein piece_len = 5 for all [UNK]
                     piece_len = len(token.value)
@@ -283,10 +284,7 @@ class GPT2BPETokenizer(Tokenizer):
         return [token for token in tokens if token.value]
 
     def decode(self, sentence: str):
-        bpe_tokens = []
-        for i in sentence.split():
-            if i.isdigit():
-                bpe_tokens.append(int(i))
+        bpe_tokens = [int(i) for i in sentence.split() if i.isdigit()]
         return self.bpe.decode(bpe_tokens)
 
 

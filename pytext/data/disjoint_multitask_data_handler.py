@@ -113,8 +113,7 @@ class RoundRobinBatchIterator(BatchIterator):
     @classmethod
     def cycle(cls, iterator):
         while True:
-            for item in iterator:
-                yield item
+            yield from iterator
 
 
 class DisjointMultitaskDataHandler(DataHandler):
@@ -204,7 +203,7 @@ class DisjointMultitaskDataHandler(DataHandler):
             data_handler.load_metadata(metadata[name])
 
     def metadata_to_save(self):
-        metadata = {}
-        for name, data_handler in self.data_handlers.items():
-            metadata[name] = data_handler.metadata_to_save()
-        return metadata
+        return {
+            name: data_handler.metadata_to_save()
+            for name, data_handler in self.data_handlers.items()
+        }

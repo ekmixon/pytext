@@ -167,7 +167,7 @@ class SquadDataSource(DataSource):
                     question = question["question"]
                     answer_texts = [answer["text"] for answer in answers]
                     answer_starts = [int(answer["answer_start"]) for answer in answers]
-                    for piece_dict in _split_document(
+                    yield from _split_document(
                         id,
                         doc,
                         question,
@@ -177,8 +177,8 @@ class SquadDataSource(DataSource):
                         self.ignore_impossible,
                         self.max_character_length,
                         self.min_overlap,
-                    ):
-                        yield piece_dict
+                    )
+
                     id += 1
 
     def process_squad_tsv(self, fname):
@@ -211,7 +211,7 @@ class SquadDataSource(DataSource):
             answers = json.loads(answers)
             answer_starts = json.loads(answer_starts)
 
-            for piece_dict in _split_document(
+            yield from _split_document(
                 id,
                 doc,
                 question,
@@ -221,8 +221,7 @@ class SquadDataSource(DataSource):
                 self.ignore_impossible,
                 self.max_character_length,
                 self.min_overlap,
-            ):
-                yield piece_dict
+            )
 
     @generator_property
     def train(self):

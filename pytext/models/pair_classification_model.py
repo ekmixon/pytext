@@ -92,8 +92,7 @@ class BasePairwiseModel(BaseModel):
     @classmethod
     def _encode_relations(cls, encodings: List[torch.Tensor]) -> List[torch.Tensor]:
         for rep_l, rep_r in itertools.combinations(encodings, 2):
-            encodings.append(torch.abs(rep_l - rep_r))
-            encodings.append(rep_l * rep_r)
+            encodings.extend((torch.abs(rep_l - rep_r), rep_l * rep_r))
         return encodings
 
     def _save_modules(self, modules: Dict[str, nn.Module], base_path: str, suffix: str):
@@ -182,12 +181,11 @@ class PairwiseModel(BasePairwiseModel):
     ) -> nn.ModuleList:
         embeddings = []
         for inputs in cls.INPUTS_PAIR:
-            embedding_list = []
-            for emb, input in zip(cls.EMBEDDINGS, inputs):
-                if hasattr(config, emb) and input in tensorizers:
-                    embedding_list.append(
-                        cls._create_embedding(getattr(config, emb), tensorizers[input])
-                    )
+            embedding_list = [
+                cls._create_embedding(getattr(config, emb), tensorizers[input])
+                for emb, input in zip(cls.EMBEDDINGS, inputs)
+                if hasattr(config, emb) and input in tensorizers
+            ]
 
             if len(embedding_list) == 1:
                 embeddings.append(embedding_list[0])
@@ -197,17 +195,8 @@ class PairwiseModel(BasePairwiseModel):
 
     @classmethod
     def _create_representations(cls, config: Config, embeddings: nn.ModuleList):
-        if config.shared_representations:
-            # create representation once and used for all embeddings
-            embedding_dim = embeddings[0].embedding_dim
-            representations = nn.ModuleList(
-                itertools.repeat(
-                    create_module(config.representation, embed_dim=embedding_dim),
-                    len(embeddings),
-                )
-            )
-        else:
-            representations = nn.ModuleList(
+        if not config.shared_representations:
+            return nn.ModuleList(
                 [
                     create_module(
                         config.representation, embed_dim=embedding.embedding_dim
@@ -215,7 +204,15 @@ class PairwiseModel(BasePairwiseModel):
                     for embedding in embeddings
                 ]
             )
-        return representations
+
+        # create representation once and used for all embeddings
+        embedding_dim = embeddings[0].embedding_dim
+        return nn.ModuleList(
+            itertools.repeat(
+                create_module(config.representation, embed_dim=embedding_dim),
+                len(embeddings),
+            )
+        )
 
     @classmethod
     def from_config(cls, config: Config, tensorizers: Dict[str, Tensorizer]):
@@ -266,36 +263,35 @@ class PairwiseModel(BasePairwiseModel):
         original ordering of sentences. Assumes that the leftmost sentences are
         already sorted by number of tokens.
         """
-        if isinstance(represention_modules[0], BiLSTMDocAttention):
-            # The leftmost inputs already come sorted by length. The others need to
-            # be sorted as well, for packing. We do it manually.
-            sorted_inputs = [(embeddings[0], lengths[0])]
-            sorted_indices = [None]
-            for embs, lens in zip(embeddings[1:], lengths[1:]):
-                lens_sorted, sorted_idx = lens.sort(descending=True)
-                embs_sorted = embs[sorted_idx]
-                sorted_inputs.append((embs_sorted, lens_sorted))
-                sorted_indices.append(sorted_idx)
-
-            representations = [
-                cls._represent_helper(rep, embs, lens)
-                for rep, (embs, lens) in zip(represention_modules, sorted_inputs)
-            ]
-
-            # Put the inputs back in the original order, so they still match up to
-            # each other as well as the targets.
-            unsorted_representations = [representations[0]]
-            for sorted_idx, rep in zip(sorted_indices[1:], representations[1:]):
-                _, unsorted_idx = sorted_idx.sort()
-                unsorted_representations.append(rep[unsorted_idx])
-            return unsorted_representations
-        else:
+        if not isinstance(represention_modules[0], BiLSTMDocAttention):
             return [
                 cls._represent_helper(rep, embs, lens)
                 for rep, (embs, lens) in zip(
                     represention_modules, zip(embeddings, lengths)
                 )
             ]
+        # The leftmost inputs already come sorted by length. The others need to
+        # be sorted as well, for packing. We do it manually.
+        sorted_inputs = [(embeddings[0], lengths[0])]
+        sorted_indices = [None]
+        for embs, lens in zip(embeddings[1:], lengths[1:]):
+            lens_sorted, sorted_idx = lens.sort(descending=True)
+            embs_sorted = embs[sorted_idx]
+            sorted_inputs.append((embs_sorted, lens_sorted))
+            sorted_indices.append(sorted_idx)
+
+        representations = [
+            cls._represent_helper(rep, embs, lens)
+            for rep, (embs, lens) in zip(represention_modules, sorted_inputs)
+        ]
+
+        # Put the inputs back in the original order, so they still match up to
+        # each other as well as the targets.
+        unsorted_representations = [representations[0]]
+        for sorted_idx, rep in zip(sorted_indices[1:], representations[1:]):
+            _, unsorted_idx = sorted_idx.sort()
+            unsorted_representations.append(rep[unsorted_idx])
+        return unsorted_representations
 
     def _represent(self, embeddings: List[torch.Tensor], seq_lens: List[torch.Tensor]):
         representations = self._represent_sort(
@@ -316,8 +312,10 @@ class PairwiseModel(BasePairwiseModel):
         return self.decoder(representation)
 
     def save_modules(self, base_path: str = "", suffix: str = ""):
-        modules = {}
-        if not self.shared_representations:
-            # need to save all representations
-            modules = {f"rep{i + 1}": rep for i, rep in enumerate(self.representations)}
+        modules = (
+            {}
+            if self.shared_representations
+            else {f"rep{i + 1}": rep for i, rep in enumerate(self.representations)}
+        )
+
         self._save_modules(modules, base_path, suffix)

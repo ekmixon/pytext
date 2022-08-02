@@ -23,7 +23,7 @@ def find_param(root, suffix, parent=""):
 
         v = getattr(root, k)
         if v is not None and is_component_class(type(v)):
-            ret += find_param(v, suffix, parent=here + ".")
+            ret += find_param(v, suffix, parent=f"{here}.")
 
     return ret
 

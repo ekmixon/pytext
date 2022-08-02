@@ -52,11 +52,11 @@ class SlotAttention(Module):
                 self.attention_add(catted).squeeze(3), dim=2
             ).unsqueeze(2)
             context_add = torch.matmul(attn_weights_add, exp_inputs_2).squeeze(2)
-            output = torch.cat((inputs, context_add), 2)
-        elif (
-            self.attention_type == SlotAttentionType.MULTIPLY
-            or self.attention_type == SlotAttentionType.DOT
-        ):
+            return torch.cat((inputs, context_add), 2)
+        elif self.attention_type in [
+            SlotAttentionType.MULTIPLY,
+            SlotAttentionType.DOT,
+        ]:
             attended = (
                 inputs
                 if self.attention_type == SlotAttentionType.DOT
@@ -66,8 +66,6 @@ class SlotAttention(Module):
                 torch.matmul(inputs, torch.transpose(attended, 1, 2)), dim=2
             ).unsqueeze(2)
             context_mult = torch.matmul(attn_weights_mult, exp_inputs_2).squeeze(2)
-            output = torch.cat((inputs, context_mult), 2)
+            return torch.cat((inputs, context_mult), 2)
         else:
-            output = inputs
-
-        return output
+            return inputs

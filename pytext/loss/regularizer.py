@@ -117,9 +117,7 @@ class AdaptiveRegularizer(Regularizer):
             -torch.bmm(U.unsqueeze(1), V.unsqueeze(2)).mean()
             + torch.logsumexp(U, axis=-1).mean()
         )
-        loss = smooth_term + eta_term
-
-        return loss
+        return smooth_term + eta_term
 
     def __call__(self, logits, targets, reduce=True):
         mask = targets.ne(self.ignore_index)

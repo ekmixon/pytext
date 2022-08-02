@@ -54,11 +54,12 @@ class PairwiseCosineDistanceOutputLayer(OutputLayerBase):
             if config.label_weights
             else None
         )
-        assert (
-            config.score_type == OutputScore.raw_cosine
-            or config.score_type == OutputScore.norm_cosine
-            or config.score_type == OutputScore.sigmoid_cosine
-        ), f"Invalid score_type {config.score_type}. See OutputScore enum."
+        assert config.score_type in [
+            OutputScore.raw_cosine,
+            OutputScore.norm_cosine,
+            OutputScore.sigmoid_cosine,
+        ], f"Invalid score_type {config.score_type}. See OutputScore enum."
+
         return cls(
             list(labels) if labels is not None else None,
             create_loss(config.loss, weight=label_weights),
@@ -152,9 +153,7 @@ class DenseRetrievalOutputLayer(PairwiseCosineDistanceOutputLayer):
     ) -> torch.Tensor:
         # Loss computation pointer: https://fburl.com/inf9ra38
         log_probs = self._get_log_probs(logits)
-        # only supports NLL loss
-        loss = self.loss_fn(log_probs, targets, reduce)
-        return loss
+        return self.loss_fn(log_probs, targets, reduce)
 
     def get_pred(self, logits: torch.Tensor, targets: torch.Tensor, *args, **kwargs):
         log_probs = self._get_log_probs(logits)

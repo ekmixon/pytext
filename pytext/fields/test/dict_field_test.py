@@ -89,7 +89,7 @@ class DictFieldTest(unittest.TestCase):
         print(self.dict_field.vocab.stoi)
 
     def test_right_pad_numericalize(self):
-        minibatch = [dict_feat for dict_feat in zip(DICT_FEATS_STR, WEIGHTS, LENGTHS)]
+        minibatch = list(zip(DICT_FEATS_STR, WEIGHTS, LENGTHS))
         padded_feats, padded_weights, padded_lengths = self.dict_field.pad(minibatch)
 
         self.assertEqual(padded_feats, PADDED_DICT_FEATS)
@@ -107,7 +107,7 @@ class DictFieldTest(unittest.TestCase):
         precision.FP16_ENABLED = False
 
     def test_left_pad_numericalize(self):
-        minibatch = [dict_feat for dict_feat in zip(DICT_FEATS_STR, WEIGHTS, LENGTHS)]
+        minibatch = list(zip(DICT_FEATS_STR, WEIGHTS, LENGTHS))
         self.dict_field.pad_first = True
         padded_feats, padded_weights, padded_lengths = self.dict_field.pad(minibatch)
 

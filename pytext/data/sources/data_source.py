@@ -238,10 +238,9 @@ class RootDataSource(DataSource):
         if len(example) != len(self.schema):
             # We might need to re-evaluate this for multi-task training
             logging.warning(
-                "Skipping row missing values: row {} -> schema {}".format(
-                    list(row.keys()), list(self.schema.keys())
-                )
+                f"Skipping row missing values: row {list(row.keys())} -> schema {list(self.schema.keys())}"
             )
+
             return None
         return example
 
@@ -274,8 +273,7 @@ class RootDataSource(DataSource):
             if schema_type in getattr(cls, "DATA_SOURCE_TYPES", {}):
                 converter = cls.DATA_SOURCE_TYPES[schema_type]
                 return converter(value)
-        else:
-            raise Exception(f'Type not registered in data source: "{schema_type}"')
+        raise Exception(f'Type not registered in data source: "{schema_type}"')
 
     def raw_train_data_generator(self):
         """

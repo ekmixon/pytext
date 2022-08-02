@@ -51,10 +51,7 @@ class MLPDecoderNTower(DecoderBase):
                     export_embedding=True,
                 ),
             )
-        from_dim = 0
-        for dims in config.tower_specific_hidden_dims:
-            from_dim += dims[-1]
-
+        from_dim = sum(dims[-1] for dims in config.tower_specific_hidden_dims)
         self.mlp = MLPDecoderNTower.get_mlp(
             from_dim, to_dim, config.hidden_dims, config.layer_norm, config.dropout
         )
@@ -96,7 +93,7 @@ class MLPDecoderNTower(DecoderBase):
         outputs = []
 
         for i in range(halfway):
-            if self.export_type == i or self.export_type == -1:
+            if self.export_type in [i, -1]:
                 tensor = (
                     torch.cat((x[i], x[halfway + i]), 1).half()
                     if precision.FP16_ENABLED
@@ -105,8 +102,8 @@ class MLPDecoderNTower(DecoderBase):
                 # len(tensor i) == i's encoder.embedding_dim + i's dense_dim
                 output = getattr(self, f"tower_mlp_{i}")(tensor)
                 outputs.append(output)
-                if self.export_type == i:
-                    return output
+            if self.export_type == i:
+                return output
 
         return self.mlp(torch.cat(outputs, 1))
 

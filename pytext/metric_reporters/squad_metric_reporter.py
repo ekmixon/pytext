@@ -294,9 +294,10 @@ class SquadMetricReporter(MetricReporter):
             self.all_end_pos_scores,
             self.all_has_answer_scores,
         )
-        label_predictions = None
-        if not self.ignore_impossible:
-            label_predictions = [
+        label_predictions = (
+            None
+            if self.ignore_impossible
+            else [
                 LabelPrediction(scores, pred, expect)
                 for scores, pred, expect in zip_longest(
                     self.all_has_answer_scores,
@@ -305,8 +306,9 @@ class SquadMetricReporter(MetricReporter):
                     fillvalue=[],
                 )
             ]
+        )
 
-        metrics = SquadMetrics(
+        return SquadMetrics(
             exact_matches=100.0 * exact_matches / count,
             f1_score=100.0 * f1_score / count,
             num_examples=count,
@@ -318,7 +320,6 @@ class SquadMetricReporter(MetricReporter):
             if label_predictions
             else None,
         )
-        return metrics
 
     def get_model_select_metric(self, metric: SquadMetrics):
         return metric.f1_score
@@ -438,9 +439,7 @@ class SquadMetricReporter(MetricReporter):
         return white_space_fix(remove_articles(remove_punc(lower(s))))
 
     def _get_tokens(self, s):
-        if not s:
-            return []
-        return self._normalize_answer(s).split()
+        return self._normalize_answer(s).split() if s else []
 
     def _compute_f1_per_answer(self, a_gold, a_pred):
         gold_toks = self._get_tokens(a_gold)
@@ -454,5 +453,4 @@ class SquadMetricReporter(MetricReporter):
             return 0
         precision = 1.0 * num_same / len(pred_toks)
         recall = 1.0 * num_same / len(gold_toks)
-        f1 = (2 * precision * recall) / (precision + recall)
-        return f1
+        return (2 * precision * recall) / (precision + recall)

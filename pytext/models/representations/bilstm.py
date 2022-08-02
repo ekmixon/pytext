@@ -148,11 +148,12 @@ class BiLSTM(RepresentationBase):
                     embedded_tokens,
                     seq_lengths.cpu(),
                     batch_first=True,
-                    enforce_sorted=True
-                    if self.disable_sort_in_jit
-                    and torch._C._get_tracing_state() is not None
-                    else False,
+                    enforce_sorted=bool(
+                        self.disable_sort_in_jit
+                        and torch._C._get_tracing_state() is not None
+                    ),
                 )
+
             else:
                 rnn_input = embedded_tokens
 

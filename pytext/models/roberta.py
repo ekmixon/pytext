@@ -85,8 +85,9 @@ class RoBERTaEncoderBase(TransformerSentenceEncoderBase):
         # NewBertModel expects the output as a tuple and grabs the first element
         tokens, _, _, _ = inputs
         full_representation = (
-            self.encoder(tokens, args) if len(args) > 0 else self.encoder(tokens)
+            self.encoder(tokens, args) if args else self.encoder(tokens)
         )
+
         sentence_rep = full_representation[-1][:, 0, :]
         return full_representation, sentence_rep
 
@@ -216,7 +217,16 @@ class RoBERTaEncoder(RoBERTaEncoderBase):
             ]
 
         self.encoder = (
-            SentenceEncoder(
+            PostEncoder(
+                transformer=SELFIETransformer(
+                    vocab_size=config.vocab_size,
+                    embedding_dim=config.embedding_dim,
+                    layers=layers,
+                    max_seq_len=config.max_seq_len,
+                )
+            )
+            if self.use_selfie_encoder
+            else SentenceEncoder(
                 transformer=Transformer(
                     vocab_size=config.vocab_size,
                     embedding_dim=config.embedding_dim,
@@ -226,16 +236,8 @@ class RoBERTaEncoder(RoBERTaEncoderBase):
                     token_embedding=token_embedding,
                 )
             )
-            if not self.use_selfie_encoder
-            else PostEncoder(
-                transformer=SELFIETransformer(
-                    vocab_size=config.vocab_size,
-                    embedding_dim=config.embedding_dim,
-                    layers=layers,
-                    max_seq_len=config.max_seq_len,
-                )
-            )
         )
+
         self.apply(init_params)
 
         if config.prune_before_load:
@@ -276,8 +278,9 @@ class RoBERTaEncoder(RoBERTaEncoderBase):
         if config.transformer_layer_to_keep != config.num_encoder_layers:
             logger.info(f"prune the layers to {config.transformer_layer_to_keep}")
             self.encoder.transformer.layers = self.encoder.transformer.layers[
-                0 : config.transformer_layer_to_keep
+                : config.transformer_layer_to_keep
             ]
+
 
         if (
             config.attention_heads_to_keep_per_layer is not None
@@ -375,20 +378,19 @@ class RoBERTa(NewBertModel):
             return ScriptPyTextEmbeddingModuleIndex(
                 traced_model, script_tensorizer, index=0
             )
+        if "dense" in tensorizers:
+            return ScriptPyTextModuleWithDense(
+                model=traced_model,
+                output_layer=self.output_layer.torchscript_predictions(),
+                tensorizer=script_tensorizer,
+                normalizer=tensorizers["dense"].normalizer,
+            )
         else:
-            if "dense" in tensorizers:
-                return ScriptPyTextModuleWithDense(
-                    model=traced_model,
-                    output_layer=self.output_layer.torchscript_predictions(),
-                    tensorizer=script_tensorizer,
-                    normalizer=tensorizers["dense"].normalizer,
-                )
-            else:
-                return ScriptPyTextModule(
-                    model=traced_model,
-                    output_layer=self.output_layer.torchscript_predictions(),
-                    tensorizer=script_tensorizer,
-                )
+            return ScriptPyTextModule(
+                model=traced_model,
+                output_layer=self.output_layer.torchscript_predictions(),
+                tensorizer=script_tensorizer,
+            )
 
     def graph_mode_quantize(
         self,
@@ -407,7 +409,7 @@ class RoBERTa(NewBertModel):
             prepare_m.eval()
             with torch.no_grad():
                 for i, (_, batch) in enumerate(data_loader):
-                    print("Running calibration with batch {}".format(i))
+                    print(f"Running calibration with batch {i}")
                     input_data = self.onnx_trace_input(batch)
                     prepare_m(*input_data)
                     if i == calibration_num_batches - 1:

@@ -144,8 +144,7 @@ class LMLSTM(BaseModel):
 
     def get_num_examples_from_batch(self, batch):
         targets = self.arrange_targets(batch)
-        num_words_in_batch = targets[1].sum().item()
-        return num_words_in_batch
+        return targets[1].sum().item()
 
     def get_export_input_names(self, tensorizers):
         return ["tokens_vals", "tokens_lens"]
@@ -182,13 +181,10 @@ class LMLSTM(BaseModel):
             rep = self.representation(token_emb)
 
         if self.decoder is None:
-            output = rep
-        else:
-            if not isinstance(rep, (list, tuple)):
-                rep = [rep]
-            output = self.decoder(*rep)
-
-        return output  # (bsz, nclasses)
+            return rep
+        if not isinstance(rep, (list, tuple)):
+            rep = [rep]
+        return self.decoder(*rep)
 
     def init_hidden(self, bsz: int) -> Tuple[torch.Tensor, torch.Tensor]:
         """

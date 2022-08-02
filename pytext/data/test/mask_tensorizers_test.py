@@ -71,10 +71,10 @@ class MaskTensorizersTest(unittest.TestCase):
             for i in range(len(masked_source)):
                 # For masked tokens, dec_target is real target tokens
                 if masked_source[i] == vocab.get_mask_index():
-                    assert masked_target[i] == tokens[i], (
-                        str(masked_target[i]) + " != " + str(tokens[i])
-                    )
-                # For unmasked, target is pad token
+                    assert (
+                        masked_target[i] == tokens[i]
+                    ), f"{str(masked_target[i])} != {str(tokens[i])}"
+
                 elif masked_source[i] != vocab.get_mask_index():
                     assert masked_target[i] == vocab.get_pad_index()
 
@@ -89,10 +89,7 @@ class MaskTensorizersTest(unittest.TestCase):
         vocab = self.masked_tensorizer.vocab
 
         def should_mask(self, depth=1):
-            if depth == 3:
-                return True
-            else:
-                return False
+            return depth == 3
 
         self.masked_tensorizer.mask.should_mask = types.MethodType(
             should_mask, self.masked_tensorizer.mask
@@ -144,10 +141,7 @@ class MaskTensorizersTest(unittest.TestCase):
         vocab = masked_tensorizer.vocab
 
         def should_mask(self, depth=1):
-            if depth == 3:
-                return True
-            else:
-                return False
+            return depth == 3
 
         masked_tensorizer.mask.should_mask = types.MethodType(
             should_mask, masked_tensorizer.mask

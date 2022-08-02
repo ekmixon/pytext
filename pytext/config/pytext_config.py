@@ -5,32 +5,32 @@ from typing import Any, List, Optional, Union
 
 
 class ConfigBaseMeta(type):
-    def annotations_and_defaults(cls):
+    def annotations_and_defaults(self):
         annotations = OrderedDict()
         defaults = {}
-        for base in reversed(cls.__bases__):
+        for base in reversed(self.__bases__):
             if base is ConfigBase:
                 continue
             annotations.update(getattr(base, "__annotations__", {}))
-            defaults.update(getattr(base, "_field_defaults", {}))
-        annotations.update(vars(cls).get("__annotations__", {}))
+            defaults |= getattr(base, "_field_defaults", {})
+        annotations.update(vars(self).get("__annotations__", {}))
         defaults.update({k: getattr(cls, k) for k in annotations if hasattr(cls, k)})
         return annotations, defaults
 
     @property
-    def __annotations__(cls):
-        annotations, _ = cls.annotations_and_defaults()
+    def __annotations__(self):
+        annotations, _ = self.annotations_and_defaults()
         return annotations
 
     _field_types = __annotations__
 
     @property
-    def _fields(cls):
-        return cls.__annotations__.keys()
+    def _fields(self):
+        return self.__annotations__.keys()
 
     @property
-    def _field_defaults(cls):
-        _, defaults = cls.annotations_and_defaults()
+    def _field_defaults(self):
+        _, defaults = self.annotations_and_defaults()
         return defaults
 
 
@@ -53,15 +53,10 @@ class ConfigBase(metaclass=ConfigBaseMeta):
         raised."""
         specified = kwargs.keys() | type(self)._field_defaults.keys()
         required = type(self).__annotations__.keys()
-        # Unspecified fields have no default and weren't provided by the caller
-        unspecified_fields = required - specified
-        if unspecified_fields:
+        if unspecified_fields := required - specified:
             raise TypeError(f"Failed to specify {unspecified_fields} for {type(self)}")
 
-        # Overspecified fields are fields that were provided but that the config
-        # doesn't know what to do with, ie. was never specified anywhere.
-        overspecified_fields = specified - required
-        if overspecified_fields:
+        if overspecified_fields := specified - required:
             raise TypeError(
                 f"Specified non-existent fields {overspecified_fields} for {type(self)}"
             )
@@ -69,7 +64,7 @@ class ConfigBase(metaclass=ConfigBaseMeta):
         vars(self).update(kwargs)
 
     def __str__(self):
-        lines = [self.__class__.__name__ + ":"]
+        lines = [f"{self.__class__.__name__}:"]
         for key, val in sorted(self._asdict().items()):
             lines += f"{key}: {val}".split("\n")
         return "\n    ".join(lines)
@@ -201,9 +196,10 @@ class PyTextConfig(ConfigBase):
                 **{
                     k: kwargs.pop(k)
                     for k in ExportConfig.__annotations__.keys()
-                    if k in kwargs.keys()
+                    if k in kwargs
                 }
             )
+
             kwargs["export_list"] = [kwargs["export"]]
             kwargs["version"] = 22
         super().__init__(**kwargs)
@@ -218,15 +214,11 @@ class PyTextConfig(ConfigBase):
                 self.export_list = [self.export]
             else:
                 raise InvalidMethodInvocation(
-                    "export list length is not 1  use the set/get_%s version of method with key"
-                    % (method_name,)
+                    f"export list length is not 1  use the set/get_{method_name} version of method with key"
                 )
 
     def get_first_config(self):
-        if self.export:
-            return self.export
-        else:
-            return self.export_list[0]
+        return self.export or self.export_list[0]
 
     @property
     def export_caffe2_path(self):

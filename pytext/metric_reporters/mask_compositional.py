@@ -109,10 +109,7 @@ class MaskedSeq2SeqCompositionalMetricReporter(Seq2SeqCompositionalMetricReporte
     ):
         super().__init__(channels, log_gradient, tensorizers, accept_flat_intents_slots)
         self.model_select_metric_key = model_select_metric_key
-        if model_select_metric_key == "fa":
-            self.lower_is_better = False
-        else:
-            self.lower_is_better = True
+        self.lower_is_better = model_select_metric_key != "fa"
         self.select_length_beam = select_length_beam
         self.print_length_metrics = print_length_metrics
 
@@ -190,7 +187,7 @@ class MaskedSeq2SeqCompositionalMetricReporter(Seq2SeqCompositionalMetricReporte
             current_model_parameter_size = self.all_context[
                 "current_model_parameter_size"
             ]
-        all_metrics = compute_masked_metrics(
+        return compute_masked_metrics(
             self.create_frame_prediction_pairs(
                 self.all_pred_trees, self.all_target_trees
             ),
@@ -210,7 +207,6 @@ class MaskedSeq2SeqCompositionalMetricReporter(Seq2SeqCompositionalMetricReporte
             num_weights=num_weights,
             current_model_parameter_size=current_model_parameter_size,
         )
-        return all_metrics
 
     def create_frame_prediction_pairs(self, all_pred_trees, all_target_trees):
         return [
@@ -224,18 +220,12 @@ class MaskedSeq2SeqCompositionalMetricReporter(Seq2SeqCompositionalMetricReporte
     def get_top_non_invalid(self, beam: List[str]) -> str:
         beam_tokens: List[List[str]] = list(map(lambda pred: pred.split(), beam))
         non_invalid = filter_invalid_beams(beam_tokens)
-        if len(non_invalid) > 0:
-            return " ".join(non_invalid[0])
-        else:
-            return beam[0]
+        return " ".join(non_invalid[0]) if len(non_invalid) > 0 else beam[0]
 
     def get_top_extract(self, beam: List[str]) -> str:
         beam_tokens: List[List[str]] = list(map(lambda pred: pred.split(), beam))
         subtrees = extract_beam_subtrees(beam_tokens)
-        if len(subtrees) > 0:
-            return " ".join(subtrees[0])
-        else:
-            return beam[0]
+        return " ".join(subtrees[0]) if len(subtrees) > 0 else beam[0]
 
     def aggregate_preds(self, new_batch, context=None):
         if new_batch is None:
@@ -372,7 +362,7 @@ class NASMaskedSeq2SeqCompositionalMetricReporter(
         )
 
     def calculate_metric(self):
-        all_metrics = compute_nas_masked_metrics(
+        return compute_nas_masked_metrics(
             self.create_frame_prediction_pairs(
                 self.all_pred_trees, self.all_target_trees
             ),
@@ -393,4 +383,3 @@ class NASMaskedSeq2SeqCompositionalMetricReporter(
             ref_frame_accuracy=self.ref_frame_accuracy,
             param_importance=self.param_importance,
         )
-        return all_metrics

@@ -110,7 +110,7 @@ class BoundaryPool(Module):
             # merge from embed_dim into 2*emded_dim
             return torch.cat((inputs[:, 0, :], inputs[:, max_len - 1, :]), dim=1)
         else:
-            raise Exception("Unknown configuration type {}".format(self.boundary_type))
+            raise Exception(f"Unknown configuration type {self.boundary_type}")
 
 
 class LastTimestepPool(Module):

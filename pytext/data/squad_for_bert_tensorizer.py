@@ -325,7 +325,7 @@ class SquadForRoBERTaTensorizer(RoBERTaTensorizer, SquadForBERTTensorizer):
             vocab=self.vocab,
             bos_token=None,
             eos_token=self.vocab.eos_token,
-            max_seq_len=seq_len if seq_len else self.max_seq_len,
+            max_seq_len=seq_len or self.max_seq_len,
         )
 
     def torchscriptify(self):

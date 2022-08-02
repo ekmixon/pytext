@@ -36,13 +36,8 @@ class ValueSerializationError(Exception):
 
 
 def _canonical_typename(cls):
-    if "_name" in dir(cls):
-        name = cls._name
-    else:
-        name = cls.__name__
-    if name.endswith(".Config"):
-        return name[: -len(".Config")]
-    return name
+    name = cls._name if "_name" in dir(cls) else cls.__name__
+    return name[: -len(".Config")] if name.endswith(".Config") else name
 
 
 def _extend_tuple_type(cls, value):
@@ -174,8 +169,7 @@ def component_config_type_from_type_name(cls, type_name: str) -> Type:
     for option in options:
         if type_name.lower() == _canonical_typename(option).lower():
             return option
-    else:
-        raise Exception(f"could not find specified component class {type_name}")
+    raise Exception(f"could not find specified component class {type_name}")
 
 
 def pytext_config_from_json(json_obj, ignore_fields=(), auto_upgrade=True):
@@ -189,8 +183,7 @@ def pytext_config_from_json(json_obj, ignore_fields=(), auto_upgrade=True):
 
 def config_from_json(cls, json_obj, ignore_fields=()):
     if getattr(cls, "__EXPANSIBLE__", False):
-        component_config = _try_component_config_from_json(cls, json_obj)
-        if component_config:
+        if component_config := _try_component_config_from_json(cls, json_obj):
             return component_config
     parsed_dict = {}
     if not hasattr(cls, "_fields"):
@@ -198,12 +191,11 @@ def config_from_json(cls, json_obj, ignore_fields=()):
     cls_name = getattr(cls, "__name__", cls)
     # Non-EXPANSIBLE classes can be found in configs
     cls_name_wo_config = cls_name.split(".")[0]
-    unknown_fields = (
+    if unknown_fields := (
         set(json_obj)
         - {f[0] for f in cls.__annotations__.items()}
         - {cls_name_wo_config}
-    )
-    if unknown_fields:
+    ):
         cls_fields = {f[0] for f in cls.__annotations__.items()}
         raise ConfigParseError(
             f"Unknown fields for class {cls_name} with fields {cls_fields} \
@@ -219,11 +211,7 @@ def config_from_json(cls, json_obj, ignore_fields=()):
         value = None
         is_optional = _is_optional(f_cls)
 
-        if field not in json_obj:
-            if field in cls._field_defaults:
-                # if using default value, no conversion is needed
-                value = cls._field_defaults.get(field)
-        else:
+        if field in json_obj:
             try:
                 value = _value_from_json(f_cls, json_obj[field])
             except ConfigParseError:
@@ -233,6 +221,9 @@ def config_from_json(cls, json_obj, ignore_fields=()):
                     f"failed to parse {field} to {f_cls} with json payload \
                     {json_obj[field]}"
                 ) from e
+        elif field in cls._field_defaults:
+            # if using default value, no conversion is needed
+            value = cls._field_defaults.get(field)
         # validate value
         if value is None and not is_optional:
             raise MissingValueError(

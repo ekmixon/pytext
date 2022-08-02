@@ -30,10 +30,9 @@ def get_decoupled(tokens: List[str], filter_ood_slots: bool) -> List[str]:
     """
     if not tokens:
         return []
-    if filter_ood_slots:
-        if DecoupledUtils.is_ood_token(tokens[0]):
-            # Out of domain sample
-            return [tokens[0], "]"]
+    if filter_ood_slots and DecoupledUtils.is_ood_token(tokens[0]):
+        # Out of domain sample
+        return [tokens[0], "]"]
 
     decoupled = []
     # stack contains mutable tuples of
@@ -50,7 +49,7 @@ def get_decoupled(tokens: List[str], filter_ood_slots: bool) -> List[str]:
             decoupled.append(tokens[i])
         elif token == "]":
             # no bracket to end
-            if len(stack) == 0:
+            if not stack:
                 raise ValueError(" ".join(tokens))
             idx, has_child = stack.pop()
             # don't keep tokens if it is an intent OR it has children
@@ -59,11 +58,9 @@ def get_decoupled(tokens: List[str], filter_ood_slots: bool) -> List[str]:
             else:
                 # leaf level slot: keep all tokens
                 decoupled.extend(tokens[idx + 1 : i + 1])
-        else:
-            # normal token outside of a bracket
-            if len(stack) == 0:
-                raise ValueError(" ".join(tokens))
-    if len(stack) > 0:
+        elif not stack:
+            raise ValueError(" ".join(tokens))
+    if stack:
         raise ValueError(" ".join(tokens))
     return decoupled
 

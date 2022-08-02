@@ -44,13 +44,15 @@ class Node:
         object.__setattr__(self, "text", text)
 
     def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, Node):
-            return NotImplemented
         return (
-            self.label == other.label  # noqa
-            and self.span == other.span  # noqa
-            and self.children == other.children  # noqa
-            and self.text == other.text  # noqa
+            (
+                self.label == other.label  # noqa
+                and self.span == other.span  # noqa
+                and self.children == other.children  # noqa
+                and self.text == other.text  # noqa
+            )
+            if isinstance(other, Node)
+            else NotImplemented
         )
 
     def get_depth(self) -> int:

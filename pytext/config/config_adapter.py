@@ -146,8 +146,8 @@ def v0_to_v1(json_config):
     if "trainer" in task and "random_seed" in task["trainer"]:
         json_config["random_seed"] = task["trainer"]["random_seed"]
         del task["trainer"]["random_seed"]
-    if "optimizer" in task and not any(
-        opt in task["optimizer"] for opt in ["Adam", "SGD", "NAG"]
+    if "optimizer" in task and all(
+        opt not in task["optimizer"] for opt in ["Adam", "SGD", "NAG"]
     ):
         op_type = task["optimizer"].get("type", "adam")
         if op_type == "adam":
@@ -231,7 +231,7 @@ def v1_to_v2(json_config):
     elif op_type == "none":
         del task["scheduler"]
     else:
-        raise ValueError("Migration for your scheduler %s not supported." % op_type)
+        raise ValueError(f"Migration for your scheduler {op_type} not supported.")
     return json_config
 
 
@@ -281,7 +281,7 @@ def v3_to_v4(json_config):
 
 def deprecate(json_config, t):
     for section in find_dicts_containing_key(json_config, t):
-        section[t + "_Deprecated"] = section.pop(t)
+        section[f"{t}_Deprecated"] = section.pop(t)
 
 
 @register_adapter(from_version=4)
@@ -492,7 +492,7 @@ def v12_to_v13(json_config):
     if metric_reporter is None:
         return json_config
     keys = list(metric_reporter.keys())
-    if keys == []:
+    if not keys:
         return json_config
     set = {"output_path", "model_select_metric", "target_label", "text_column_names"}
     if keys[0] in set:
@@ -557,8 +557,9 @@ def migrate_to_new_data_handler(task, columns):
     rename_parameter(task, "data_handler.eval_path", "data.source.eval_filename")
     rename_parameter(task, "data_handler.test_path", "data.source.test_filename")
     rename_parameter(task, "data_handler.train_path", "data.source.train_filename")
-    columns_to_read = next(find_dicts_containing_key(task, "columns_to_read"), None)
-    if columns_to_read:
+    if columns_to_read := next(
+        find_dicts_containing_key(task, "columns_to_read"), None
+    ):
         rename_parameter(
             task, "data_handler.columns_to_read", "data.source.field_names"
         )
@@ -743,10 +744,12 @@ def upgrade_export_config(json_config):
         "target",
     ]
 
-    export_config = {}
-    for f in export_config_fields:
-        if f in json_config:
-            export_config[f] = json_config.pop(f, None)
+    export_config = {
+        f: json_config.pop(f, None)
+        for f in export_config_fields
+        if f in json_config
+    }
+
     json_config["export"] = export_config
     return json_config
 
@@ -823,13 +826,11 @@ def get_json_config_iterator(json_config, lookup_key):
         if key == lookup_key:
             yield value
         elif isinstance(value, dict):
-            for v in get_json_config_iterator(value, lookup_key):
-                yield v
+            yield from get_json_config_iterator(value, lookup_key)
         elif isinstance(value, list):
             for val in value:
                 if isinstance(val, dict):
-                    for v in get_json_config_iterator(val, lookup_key):
-                        yield v
+                    yield from get_json_config_iterator(val, lookup_key)
 
 
 @register_down_grade_adapter(from_version=26)
@@ -838,9 +839,8 @@ def v26_to_v25(json_config):
     Downgrade by removing target option from all
     exports in export_list
     """
-    if "export" in json_config:
-        if "target" in json_config["export"]:
-            json_config["export"].pop("target")
+    if "export" in json_config and "target" in json_config["export"]:
+        json_config["export"].pop("target")
     if "export_list" in json_config:
         export_list = json_config["export_list"]
         for export_cfg in export_list:
@@ -1085,9 +1085,7 @@ def get_name_from_options(export_config):
             and "batch_padding_control" in export_config
         ):
             tgt = "nnpi"
-        else:
-            pass
-    elif "seq_padding_control" and "batch_padding_control" in export_config:
+    elif "batch_padding_control" in export_config:
         tgt = "nnpi"
     else:
         tgt = "unknown"

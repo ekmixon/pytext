@@ -149,9 +149,7 @@ def create_conv_package(
 
         """
 
-        if dilated:
-            return 2 ** index
-        return 1
+        return 2 ** index if dilated else 1
 
     def _compute_padding(kernel_size, dilation, causal):
         """
@@ -175,9 +173,7 @@ def create_conv_package(
 
         """
 
-        if activation == Activation.GLU:
-            return out_channels * 2
-        return out_channels
+        return out_channels * 2 if activation == Activation.GLU else out_channels
 
     package = []
     dilation = _compute_dilation(index, dilated)

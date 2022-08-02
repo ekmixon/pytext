@@ -26,11 +26,11 @@ def is_valid_tree(beam: List[str]) -> bool:
         if token[0] == "[":
             paren_stack.append(i)
         elif token[-1] == "]":
-            if len(paren_stack) == 0:
+            if not paren_stack:
                 return False
             paren_stack.pop()
 
-    return len(paren_stack) == 0
+    return not paren_stack
 
 
 def extract_subtree(beam: List[str]) -> Optional[List[str]]:

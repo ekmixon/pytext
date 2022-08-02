@@ -91,7 +91,8 @@ class AtisIntentDataSource(RootDataSource):
         field_names = field_names or AtisIntentDataSource.Config.field_names
         assert (
             len(field_names or []) == 2
-        ), "AtisIntentDataSource only handles 2 field_names: {}".format(field_names)
+        ), f"AtisIntentDataSource only handles 2 field_names: {field_names}"
+
 
         self.query_field = field_names[0]
         self.intent_field = field_names[1]

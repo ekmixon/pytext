@@ -174,16 +174,12 @@ class TensorizerScriptImpl(torch.nn.Module):
     def get_texts_by_index(
         self, texts: Optional[List[List[str]]], index: int
     ) -> Optional[List[str]]:
-        if texts is None or len(texts) == 0:
-            return None
-        return texts[index]
+        return None if texts is None or len(texts) == 0 else texts[index]
 
     def get_tokens_by_index(
         self, tokens: Optional[List[List[List[str]]]], index: int
     ) -> Optional[List[List[str]]]:
-        if tokens is None or len(tokens) == 0:
-            return None
-        return tokens[index]
+        return None if tokens is None or len(tokens) == 0 else tokens[index]
 
     def tokenize(self, *args, **kwargs):
         """
@@ -307,8 +303,6 @@ class Tensorizer(Component):
         See `WordTokenizer.initialize` for a more concrete example.
         """
         return
-        # we need yield here to make this function a generator
-        yield
 
     @lazy_property
     def tensorizer_script_impl(self):
@@ -327,9 +321,8 @@ class Tensorizer(Component):
         res = ""
         if hasattr(self, "vocab"):
             res = " ".join([self.vocab._vocab[index] for index in token_indices])
-            if hasattr(self, "tokenizer"):
-                if hasattr(self.tokenizer, "decode"):
-                    res = self.tokenizer.decode(res)
+            if hasattr(self, "tokenizer") and hasattr(self.tokenizer, "decode"):
+                res = self.tokenizer.decode(res)
         return res
 
     def torchscriptify(self):
@@ -602,16 +595,12 @@ class ByteTensorizer(Tensorizer):
         if self.add_bos_token:
             bos = BYTE_EOS if self.use_eos_token_for_bos else BYTE_BOS
             if bos in text:
-                print('Special token "{}" exists in text "{}". Exit.'.format(bos, text))
+                print(f'Special token "{bos}" exists in text "{text}". Exit.')
                 sys.exit(1)
             bytes = list(bos.encode()) + bytes
         if self.add_eos_token:
             if BYTE_EOS in text:
-                print(
-                    'Special token "{}" exists in text "{}". Exit.'.format(
-                        BYTE_EOS, text
-                    )
-                )
+                print(f'Special token "{BYTE_EOS}" exists in text "{text}". Exit.')
                 sys.exit(1)
             bytes = bytes + list(BYTE_EOS.encode())
         return bytes, len(bytes)
@@ -766,8 +755,7 @@ class Float1DListTensorizer(Tensorizer):
         return row[self.column]
 
     def tensorize(self, batch):
-        values = pad_and_tensorize(batch, pad_token=self.pad_token, dtype=torch.float)
-        return values
+        return pad_and_tensorize(batch, pad_token=self.pad_token, dtype=torch.float)
 
     @lazy_property
     def tensorizer_script_impl(self):
@@ -808,8 +796,7 @@ class Integer1DListTensorizer(Tensorizer):
         return row[self.column]
 
     def tensorize(self, batch):
-        values = pad_and_tensorize(batch, pad_token=self.SPAN_PAD_IDX)
-        return values
+        return pad_and_tensorize(batch, pad_token=self.SPAN_PAD_IDX)
 
     @lazy_property
     def tensorizer_script_impl(self):
@@ -872,9 +859,7 @@ class CharacterVocabTokenTensorizerScriptImpl(TensorizerScriptImpl):
                 tokens.extend(self.do_nothing_tokenizer.tokenize(token))
 
         for token in tokens:
-            chars: List[str] = []
-            for char in token[0]:
-                chars.append(char)
+            chars: List[str] = list(token[0])
             char_tokens.append(chars)
             char_tokens_lengths.append(len(chars))
 
@@ -908,20 +893,12 @@ class CharacterVocabTokenTensorizerScriptImpl(TensorizerScriptImpl):
     def get_texts_by_index(
         self, texts: Optional[List[List[str]]], index: int
     ) -> Optional[str]:
-        if texts is None or len(texts) == 0:
-            return None
-
-        # CharacterVocabTokenTensorizer only works with a single text per row, stick with that
-        return texts[index][0]
+        return None if texts is None or len(texts) == 0 else texts[index][0]
 
     def get_tokens_by_index(
         self, tokens: Optional[List[List[List[str]]]], index: int
     ) -> Optional[List[str]]:
-        if tokens is None or len(tokens) == 0:
-            return None
-
-        # CharacterVocabTokenTensorizer only works with a single text per row, stick with that
-        return tokens[index][0]
+        return None if tokens is None or len(tokens) == 0 else tokens[index][0]
 
     def forward(self, inputs: ScriptBatchInput) -> Tuple[torch.Tensor, torch.Tensor]:
 
@@ -1068,13 +1045,7 @@ class CharacterVocabTokenTensorizer(Tensorizer):
             self.vocab = self.vocab_builder.make_vocab()
 
     def character_tokenize(self, tokens: List[Token]):
-        res = []
-        for token in tokens:
-            chars = []
-            for char in token.value:
-                chars.append(char)
-            res.append(chars)
-        return res
+        return [list(token.value) for token in tokens]
 
     def _add_vocab_from_files(self):
         for vocab_file in self.vocab_config.vocab_files:
@@ -1399,9 +1370,8 @@ class LabelListRankTensorizer(LabelTensorizer):
                         "Found none or empty value in the list, \
                         while pad_missing is disabled"
                     )
-            else:
-                if labelRank == 1:
-                    label_idx_list[self.vocab.lookup_all(label)] = 1
+            elif labelRank == 1:
+                label_idx_list[self.vocab.lookup_all(label)] = 1
 
         return label_idx_list, len(label_idx_list)
 
@@ -2131,8 +2101,7 @@ class SeqTokenTensorizer(Tensorizer):
         for sentence in seq:
             sen_len = len(sentence)
             sentence_lens.append(sen_len)
-            pad_len = max_len - sen_len
-            if pad_len:
+            if pad_len := max_len - sen_len:
                 sentence += [pad_token] * pad_len
         return seq, sentence_lens, len(seq)
 
@@ -2266,10 +2235,10 @@ class NtokensTensorizer(MetricTensorizer):
     Used for calculating tokens per second."""
 
     def tensorize(self, batch):
-        ntokens = 0
-        for name, index in zip(self.names, self.indexes):
-            ntokens += sum((sample[index] for sample in batch[name]))
-        return ntokens
+        return sum(
+            sum((sample[index] for sample in batch[name]))
+            for name, index in zip(self.names, self.indexes)
+        )
 
 
 class FloatTensorizer(Tensorizer):
@@ -2378,9 +2347,9 @@ class String2DListTensorizerScriptImpl(TensorizerScriptImpl):
 
         token_indices: List[List[int]] = self.vocab.lookup_indices_2d(tokens)
 
-        token_lengths: List[int] = []
-        for idx in range(len(token_indices)):
-            token_lengths.append(len(token_indices[idx]))
+        token_lengths: List[int] = [
+            len(token_indice) for token_indice in token_indices
+        ]
 
         return token_indices, token_lengths, len(token_indices)
 
@@ -2408,10 +2377,8 @@ class String2DListTensorizerScriptImpl(TensorizerScriptImpl):
         seq_lens_2d: List[List[int]] = []
         seq_lens_1d: List[int] = []
 
-        for idx in range(len(inputs)):
-            numberized: Tuple[List[List[int]], List[int], int] = self.numberize(
-                inputs[idx]
-            )
+        for input_ in inputs:
+            numberized: Tuple[List[List[int]], List[int], int] = self.numberize(input_)
             tokens_3d.append(numberized[0])
             seq_lens_2d.append(numberized[1])
             seq_lens_1d.append(numberized[2])
@@ -2466,26 +2433,20 @@ class String2DListTensorizer(Tensorizer):
         self.vocab_builder = VocabBuilder(delimiter=self.vocab_file_delimiter)
 
         if self.vocab_config.build_from_data:
-            try:
+            with contextlib.suppress(GeneratorExit):
                 while True:
                     row = yield
                     self.vocab_builder.add_all(chain.from_iterable(row[self.column]))
-            except GeneratorExit:
-                pass
-
             self.vocab_builder.truncate_to_vocab_size(
                 self.vocab_config.size_from_data, self.vocab_config.min_counts
             )
 
         elif self.vocab_config.vocab_files is not None:
 
-            try:
+            with contextlib.suppress(GeneratorExit):
                 # PyText will call this initializer with all the rows, but we don't actually need that
                 while True:
                     row = yield
-            except GeneratorExit:
-                pass
-
             # Okay, we finally got to do our thing
             for vocab_file in self.vocab_config.vocab_files:
                 with PathManager.open(vocab_file.filepath) as f:
@@ -2528,12 +2489,9 @@ def initialize_tensorizers(tensorizers, data_source, from_scratch=True):
         else tensorizer.initialize()
         for tensorizer in tensorizers.values()
     ]:
-        try:
+        with contextlib.suppress(StopIteration):
             init.send(None)  # kick
             initializers.append(init)
-        except StopIteration:
-            pass
-
     if initializers:
         for row in data_source:
             for init in initializers:

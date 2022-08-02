@@ -87,7 +87,7 @@ class TwoTowerClassificationModel(BaseModel):
             prepare_m.eval()
             with torch.no_grad():
                 for i, (_, batch) in enumerate(data_loader):
-                    print("Running calibration with batch {}".format(i))
+                    print(f"Running calibration with batch {i}")
                     input_data = self.onnx_trace_input(batch)
                     prepare_m(*input_data)
                     if i == calibration_num_batches - 1:
@@ -100,14 +100,12 @@ class TwoTowerClassificationModel(BaseModel):
         return trace
 
     def arrange_model_inputs(self, tensor_dict):
-        model_inputs = (
+        return (
             tensor_dict["right_tokens"],
             tensor_dict["left_tokens"],
             tensor_dict["right_dense"],
             tensor_dict["left_dense"],
         )
-
-        return model_inputs
 
     def arrange_targets(self, tensor_dict):
         return tensor_dict["labels"]

@@ -110,13 +110,11 @@ def compute_length_metrics(
     length_metrics = {}
     length_report = {}
     if all_target_length_preds:
-        all_length_pred_agg = {}
         beam = len(all_target_length_preds[0])
-        for i in range(beam):
-            all_length_pred_agg[i] = []
+        all_length_pred_agg = {i: [] for i in range(beam)}
         for label, preds in zip(all_target_lens, all_target_length_preds):
             for l in range(beam):
-                if label in preds[0 : l + 1]:
+                if label in preds[: l + 1]:
                     all_length_pred_agg[l].append(label)
                 else:
                     all_length_pred_agg[l].append(preds[0])

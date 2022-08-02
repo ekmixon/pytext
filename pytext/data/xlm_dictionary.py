@@ -90,10 +90,7 @@ class Dictionary(object):
         """
         Returns the index of the specified word.
         """
-        if no_unk:
-            return self.word2id[word]
-        else:
-            return self.word2id.get(word, self.unk_index)
+        return self.word2id[word] if no_unk else self.word2id.get(word, self.unk_index)
 
     def max_vocab(self, max_vocab):
         """
@@ -139,7 +136,7 @@ class Dictionary(object):
         word2id = {BOS_WORD: 0, EOS_WORD: 1, PAD_WORD: 2, UNK_WORD: 3}
         for i in range(SPECIAL_WORDS):
             word2id[SPECIAL_WORD % i] = 4 + i
-        counts = {k: 0 for k in word2id.keys()}
+        counts = {k: 0 for k in word2id}
         f = PathManager.open(vocab_path, "r", encoding="utf-8")
         for i, line in enumerate(f):
             if "\u2028" in line:
@@ -154,11 +151,11 @@ class Dictionary(object):
             assert line[1].isdigit(), (i, line)
             if line[0] in word2id:
                 skipped += 1
-                print("%s already in vocab" % line[0])
+                print(f"{line[0]} already in vocab")
                 continue
             if not line[1].isdigit():
                 skipped += 1
-                print("Empty word at line %s with count %s" % (i, line))
+                print(f"Empty word at line {i} with count {line}")
                 continue
             # shift because of extra words
             word2id[line[0]] = 4 + SPECIAL_WORDS + i - skipped
@@ -177,7 +174,7 @@ class Dictionary(object):
         Index sentences with a dictionary.
         """
         if bin_path is not None and PathManager.isfile(bin_path):
-            print("Loading data from %s ..." % bin_path)
+            print(f"Loading data from {bin_path} ...")
             data = torch.load(bin_path)
             assert dico == data["dico"]
             return data
@@ -234,7 +231,7 @@ class Dictionary(object):
             "unk_words": unk_words,
         }
         if bin_path is not None:
-            print("Saving the data to %s ..." % bin_path)
+            print(f"Saving the data to {bin_path} ...")
             torch.save(data, bin_path, pickle_protocol=4)
 
         return data

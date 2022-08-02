@@ -118,5 +118,4 @@ class MultiplicativeAttention(Module):
         Wq = self.linear(q) if self.linear is not None else q
         pWq = p_seq.bmm(Wq.unsqueeze(2)).squeeze(2)
         pWq.data.masked_fill_(p_mask.data, -float("inf"))
-        attn_scores = F.softmax(pWq, dim=-1) if self.normalize else pWq.exp()
-        return attn_scores
+        return F.softmax(pWq, dim=-1) if self.normalize else pWq.exp()

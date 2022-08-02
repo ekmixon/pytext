@@ -13,8 +13,8 @@ class LabelSmoothedCrossEntropyLossTest(hu.HypothesisTestCase):
         torch.manual_seed(1)
         np.random.seed(1)
 
+        beta = 0.1
         for _ in range(50):
-            beta = 0.1
             reduce = np.random.choice([True, False])
             num_classes = np.random.randint(1, 10)
             input_size = np.random.randint(1, 10)

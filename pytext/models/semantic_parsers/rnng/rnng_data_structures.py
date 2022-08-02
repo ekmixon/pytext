@@ -143,8 +143,7 @@ class CompositionalNN(torch.jit.ScriptModule):
         stacked_fwd = self.lstm_fwd(torch.stack(fwd_input), lstm_hidden_fwd)[0][0]
         stacked_rev = self.lstm_rev(torch.stack(rev_input), lstm_hidden_rev)[0][0]
         combined = torch.cat([stacked_fwd, stacked_rev], dim=1)
-        subtree_embedding = self.linear_seq(combined)
-        return subtree_embedding
+        return self.linear_seq(combined)
 
 
 class CompositionalSummationNN(torch.jit.ScriptModule):
@@ -162,8 +161,7 @@ class CompositionalSummationNN(torch.jit.ScriptModule):
     @torch.jit.script_method
     def forward(self, x: List[torch.Tensor], device: str = "cpu") -> torch.Tensor:
         combined = torch.sum(torch.cat(x, dim=0), dim=0, keepdim=True)
-        subtree_embedding = self.linear_seq(combined)
-        return subtree_embedding
+        return self.linear_seq(combined)
 
 
 class ParserState:

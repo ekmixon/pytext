@@ -171,9 +171,7 @@ class SamplewiseLabelSmoothingLoss(LabelSmoothingLoss):
         self.label_loss = label_loss
         self.smoothing_loss = smoothing_loss
 
-        loss = label_loss + self.beta * smoothing_loss
-
-        return loss
+        return label_loss + self.beta * smoothing_loss
 
 
 class NARSequenceLoss(Loss):

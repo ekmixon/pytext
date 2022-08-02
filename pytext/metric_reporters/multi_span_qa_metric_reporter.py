@@ -171,13 +171,12 @@ class MultiSpanQAMetricReporter(MetricReporter):
             self.all_target_answers,
         )
         count = len(self.all_pred_answers)
-        metrics = SquadMetrics(
+        return SquadMetrics(
             exact_matches=100.0 * exact_matches / count,
             f1_score=100.0 * f1_scores_sum / count,
             num_examples=count,
             classification_metrics=None,
         )
-        return metrics
 
     def get_model_select_metric(self, metric: SquadMetrics):
         return metric.f1_score
@@ -275,10 +274,7 @@ class MultiSpanQAMetricReporter(MetricReporter):
     def _answer_to_bags(
         self, answer: Union[str, List[str], Tuple[str, ...]]
     ) -> Tuple[List[str], List[Set[str]]]:
-        if isinstance(answer, (list, tuple)):
-            raw_spans = answer
-        else:
-            raw_spans = [answer]
+        raw_spans = answer if isinstance(answer, (list, tuple)) else [answer]
         normalized_spans: List[str] = []
         token_bags = []
         for raw_span in raw_spans:
@@ -326,17 +322,10 @@ class MultiSpanQAMetricReporter(MetricReporter):
 
     def _compute_f1(self, predicted_bag: Set[str], gold_bag: Set[str]) -> float:
         intersection = len(gold_bag.intersection(predicted_bag))
-        if not predicted_bag:
-            precision = 1.0
-        else:
-            precision = intersection / float(len(predicted_bag))
-        if not gold_bag:
-            recall = 1.0
-        else:
-            recall = intersection / float(len(gold_bag))
-        f1 = (
+        precision = intersection / float(len(predicted_bag)) if predicted_bag else 1.0
+        recall = intersection / float(len(gold_bag)) if gold_bag else 1.0
+        return (
             (2 * precision * recall) / (precision + recall)
-            if not (precision == 0.0 and recall == 0.0)
+            if precision != 0.0 or recall != 0.0
             else 0.0
         )
-        return f1

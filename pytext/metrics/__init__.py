@@ -355,7 +355,7 @@ class ClassificationMetrics(NamedTuple):
             metrics["ROC AUC"] = f"{self.roc_auc :.3f}"
         for key, value in metrics.items():
             info = {"type": "NET", "metric": key, "unit": "None", "value": value}
-            print("PyTorchObserver " + json_dumps(info))
+            print(f"PyTorchObserver {json_dumps(info)}")
 
 
 class Confusions:
@@ -376,9 +376,11 @@ class Confusions:
         self.FN: int = FN
 
     def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, Confusions):
-            return NotImplemented
-        return self.TP == other.TP and self.FP == other.FP and self.FN == other.FN
+        return (
+            self.TP == other.TP and self.FP == other.FP and self.FN == other.FN
+            if isinstance(other, Confusions)
+            else NotImplemented
+        )
 
     def __add__(self, other: "Confusions") -> "Confusions":
         return Confusions(
@@ -540,9 +542,7 @@ class RealtimeMetrics(NamedTuple):
     ups: float
 
     def _format(self, key, value):
-        if key in ("tps", "ups"):
-            return round(value)
-        return value
+        return round(value) if key in ("tps", "ups") else value
 
     def __str__(self):
         metrics = {"num_gpus": cuda.DISTRIBUTED_WORLD_SIZE}
@@ -715,9 +715,8 @@ def compute_average_recall(
         recall_at_precision_dict, _ = recall_at_precision(
             y_true_sorted, y_score_sorted, [average_precisions[label_name]]
         )
-        for _, value in recall_at_precision_dict.items():
-            recalls.append(value)
-    return sum(v for v in recalls) / (len(recalls) * 1.0)
+        recalls.extend(value for _, value in recall_at_precision_dict.items())
+    return sum(recalls) / (len(recalls) * 1.0)
 
 
 def compute_soft_metrics(
@@ -915,18 +914,17 @@ def compute_multi_label_multi_class_soft_metrics(
     for label_idx, label_vocab in enumerate(label_vocabs):
         label = list(label_names)[label_idx]
         avg = (
-            sum(1 for s, p, e in predictions[label_idx] if p == e)
+            sum(p == e for s, p, e in predictions[label_idx])
             / len(predictions[label_idx])
-            * 1.0
-        )
+        ) * 1.0
+
         class_accuracy[label] = avg
         soft_metrics_ = compute_soft_metrics(predictions[label_idx], label_vocab)
         temp_avg_precision_ = {k: v.average_precision for k, v in soft_metrics_.items()}
         average_precision[label] = sum(
             v for k, v in temp_avg_precision_.items() if k not in NAN_LABELS
-        ) / (
-            sum(1 for k, v in temp_avg_precision_.items() if k not in NAN_LABELS) * 1.0
-        )
+        ) / (sum(k not in NAN_LABELS for k in temp_avg_precision_) * 1.0)
+
 
         average_recall[label] = compute_average_recall(
             predictions[label_idx], label_vocab, temp_avg_precision_
@@ -944,26 +942,27 @@ def compute_multi_label_multi_class_soft_metrics(
             k: v.decision_thresh_at_recall for k, v in soft_metrics_.items()
         }
         roc_auc[label] = {k: v.roc_auc for k, v in soft_metrics_.items()}
-        average_auc.append(
-            sum(v for v in roc_auc[label].values()) / (len(roc_auc[label]) * 1.0)
-        )
+        average_auc.append(sum(roc_auc[label].values()) / (len(roc_auc[label]) * 1.0))
 
     return MultiLabelSoftClassificationMetrics(
         average_label_precision=average_precision,
-        average_overall_precision=sum(v for v in average_precision.values())
-        / (len(average_precision) * 1.0),
+        average_overall_precision=(
+            sum(average_precision.values()) / (len(average_precision) * 1.0)
+        ),
         average_label_recall=average_recall,
-        average_overall_recall=sum(v for v in average_recall.values())
-        / (len(average_recall) * 1.0),
+        average_overall_recall=(
+            sum(average_recall.values()) / (len(average_recall) * 1.0)
+        ),
         recall_at_precision=recall_at_precision,
         decision_thresh_at_precision=decision_thresh_at_precision,
         precision_at_recall=precision_at_recall,
         decision_thresh_at_recall=decision_thresh_at_recall,
         roc_auc=roc_auc,
-        average_overall_auc=sum(v for v in average_auc) / (len(average_auc) * 1.0),
+        average_overall_auc=sum(average_auc) / (len(average_auc) * 1.0),
         label_accuracy=class_accuracy,
-        average_overall_accuracy=sum(v for v in class_accuracy.values())
-        / (len(class_accuracy) * 1.0),
+        average_overall_accuracy=(
+            sum(class_accuracy.values()) / (len(class_accuracy) * 1.0)
+        ),
     )
 
 
@@ -984,11 +983,10 @@ def compute_matthews_correlation_coefficients(
         Matthews correlation coefficient, which is `sqrt((TP + FP) * (TP + FN) *
         (TN + FP) * (TN + FN))`.
     """
-    mcc = safe_division(
+    return safe_division(
         (TP * TN) - (FP * FN),
         np.sqrt(float((TP + FP) * (TP + FN) * (TN + FP) * (TN + FN))),
     )
-    return mcc
 
 
 def compute_roc_auc_given_sorted_positives(
@@ -1146,11 +1144,10 @@ def compute_multi_label_classification_metrics(
                     per_label_confusions.update(label_name, "TP", 1)
                 else:  # FP
                     per_label_confusions.update(label_name, "FP", 1)
-            else:
-                if label_idx in expected:  # FN
-                    per_label_confusions.update(label_name, "FN", 1)
-                else:  # TN, update correct num
-                    num_correct += 1
+            elif label_idx in expected:  # FN
+                per_label_confusions.update(label_name, "FN", 1)
+            else:  # TN, update correct num
+                num_correct += 1
 
     accuracy = safe_division(num_correct, num_expected_labels)
     macro_prf1_metrics = per_label_confusions.compute_metrics()
@@ -1230,9 +1227,8 @@ def compute_multi_label_full_vector_classification_metrics(
                     per_label_confusions.update(label_name, "TP", 1)
                 else:  # FP
                     per_label_confusions.update(label_name, "FP", 1)
-            else:
-                if expected[label_idx] > 0:  # FN
-                    per_label_confusions.update(label_name, "FN", 1)
+            elif expected[label_idx] > 0:  # FN
+                per_label_confusions.update(label_name, "FN", 1)
 
     accuracy = safe_division(num_correct, num_expected_labels)
     macro_prf1_metrics = per_label_confusions.compute_metrics()

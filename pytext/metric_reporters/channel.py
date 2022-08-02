@@ -186,7 +186,7 @@ class TensorBoardChannel(Channel):
             self.summary_writer.add_scalar(f"{prefix}/loss", loss, epoch)
         elif isinstance(loss, dict):
             for key in loss:
-                self.summary_writer.add_scalar(f"{prefix}/" + key, loss[key], epoch)
+                self.summary_writer.add_scalar(f"{prefix}/{key}", loss[key], epoch)
         else:
             raise Exception("Loss type not supported")
 
@@ -276,9 +276,9 @@ class TensorBoardChannel(Channel):
                         sum_gradient = sum(gradients[key])
                         avg_gradient = sum_gradient / len(gradients[key])
                         grad_norms = np.array([LA.norm(g) for g in gradients[key]])
-                        self.log_vector(key + "_avg_gradients", avg_gradient, epoch)
-                        self.log_vector(key + "_sum_gradients", sum_gradient, epoch)
-                        self.log_vector(key + "_l2norm_gradients", grad_norms, epoch)
+                        self.log_vector(f"{key}_avg_gradients", avg_gradient, epoch)
+                        self.log_vector(f"{key}_sum_gradients", sum_gradient, epoch)
+                        self.log_vector(f"{key}_l2norm_gradients", grad_norms, epoch)
 
             for key, val in model.named_parameters():
                 if val is not None and len(val) > 0 and not (val == 0).all():

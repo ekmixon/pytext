@@ -47,7 +47,7 @@ class MaskingFunction(Component):
     def _prepare_dec_target(
         self, dec_source: List[int], clean_input_tokens: List[int], vocab: Vocabulary
     ) -> List[int]:
-        dec_target = [
+        return [
             vocab.get_pad_index()
             if dec_source_token != vocab.get_mask_index()
             else dec_real_target_token
@@ -55,8 +55,6 @@ class MaskingFunction(Component):
                 dec_source, clean_input_tokens
             )
         ]
-
-        return dec_target
 
 
 class TreeMask(MaskingFunction):
@@ -84,7 +82,7 @@ class TreeMask(MaskingFunction):
     def gen_masked_tree(self, node, mask_token, depth=1):
         if self.should_mask(depth):
             actual_str_len = len(node.flat_str().strip().split(" "))
-            return " ".join([mask_token for idx in range(actual_str_len)])
+            return " ".join([mask_token for _ in range(actual_str_len)])
         else:
             return_str = " "
             if (
@@ -168,10 +166,10 @@ class TreeMask(MaskingFunction):
 class MaskEverything(MaskingFunction):
     def gen_masked_tree(self, node, mask_token, depth=1):
         actual_str_len = len(node.flat_str().strip().split(" "))
-        return " ".join([mask_token for idx in range(actual_str_len)])
+        return " ".join([mask_token for _ in range(actual_str_len)])
 
     def gen_masked_source_target(self, tokens, vocab: Vocabulary):
-        dec_source: List[int] = [vocab.get_mask_index() for idx in tokens]
+        dec_source: List[int] = [vocab.get_mask_index() for _ in tokens]
         dec_target = self._prepare_dec_target(dec_source, tokens, vocab)
         return dec_source, dec_target
 

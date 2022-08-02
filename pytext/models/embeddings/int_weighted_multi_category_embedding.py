@@ -104,9 +104,7 @@ class IntWeightedMultiCategoryEmbedding(EmbeddingBase):
 
         if self.pooling_type == "none":
             return self.num_intput_features * self.embedding_dim
-        elif self.pooling_type == "mean":
-            return self.embedding_dim
-        elif self.pooling_type == "max":
+        elif self.pooling_type in ["mean", "max"]:
             return self.embedding_dim
         else:
             raise RuntimeError(f"Pooling type {self.pooling_type} is unsupported.")
@@ -121,13 +119,16 @@ class IntWeightedMultiCategoryEmbedding(EmbeddingBase):
             feats_remap = torch.remainder(feat, buckets)
             feat_emb: nn.EmbeddingBag = self.feature_embeddings[str(k)]
             embeddings.append(
-                feat_emb(
-                    feats_remap,
-                    offsets=offsets,
-                    per_sample_weights=(weights if not self.ignore_weight else None),
+                (
+                    feat_emb(
+                        feats_remap,
+                        offsets=offsets,
+                        per_sample_weights=None if self.ignore_weight else weights,
+                    )
+                    * self.weight_scale
                 )
-                * self.weight_scale
             )
+
 
         if self.pooling_type == "none":  # None
             reduced_embeds = torch.cat(embeddings, dim=1)

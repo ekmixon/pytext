@@ -124,13 +124,12 @@ class DictEmbedding(EmbeddingBase):
         `torch.where` is not supported for mobile ONNX, this hack allows a mobile
         exported version of `torch.where` which is computationally more expensive
         """
-        if self.mobile:
-            mask = torch.eq(tensor, find_val)
-            return tensor * (1 - mask.long()) + mask * replace_val
-        else:
+        if not self.mobile:
             return torch.where(
                 tensor == find_val, torch.full_like(tensor, replace_val), tensor
             )
+        mask = torch.eq(tensor, find_val)
+        return tensor * (1 - mask.long()) + mask * replace_val
 
     def forward(
         self, feats: torch.Tensor, weights: torch.Tensor, lengths: torch.Tensor

@@ -59,8 +59,13 @@ class MLPDecoder(DecoderBase):
 
         layers = []
         for dim in config.hidden_dims or []:
-            layers.append(nn.Linear(in_dim, dim, config.bias))
-            layers.append(get_activation(config.activation))
+            layers.extend(
+                (
+                    nn.Linear(in_dim, dim, config.bias),
+                    get_activation(config.activation),
+                )
+            )
+
             if config.layer_norm:
                 layers.append(nn.LayerNorm(dim))
             if config.dropout > 0:
@@ -71,7 +76,7 @@ class MLPDecoder(DecoderBase):
         if out_dim > 0:
             layers.append(nn.Linear(in_dim, out_dim, config.bias))
 
-        assert len(layers) > 0
+        assert layers
         if config.spectral_normalization:
             layers[-1] = torch.nn.utils.spectral_norm(layers[-1])
         self.mlp = nn.Sequential(*layers)

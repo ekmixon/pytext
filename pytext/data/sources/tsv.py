@@ -296,9 +296,10 @@ class BlockShardedTSV:
         for row in reader:
             if self.file.tell() > self.end:
                 break
-            if self.drop_incomplete_rows:
-                if any(map(lambda v: v is None, row.values())):  # drop!
-                    continue
+            if self.drop_incomplete_rows and any(
+                map(lambda v: v is None, row.values())
+            ):
+                continue
             yield row
 
 

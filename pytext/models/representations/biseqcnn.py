@@ -77,9 +77,7 @@ class BSeqCNNRepresentation(RepresentationBase):
             word_rep = self._word_forward(inputs, i).unsqueeze(1)
             word_reps.append(word_rep)
 
-        sent_rep = torch.cat(word_reps, dim=1)
-
-        return sent_rep  # (N, W, 3*len(kernel_sizes)*out_channels)
+        return torch.cat(word_reps, dim=1)
 
     def _preprocess_inputs(self, inputs: torch.Tensor) -> torch.Tensor:
         # Transpose to make sentence dimension as last dimension of tensor,

@@ -452,8 +452,7 @@ class MetricsTest(MetricsTestBase):
             node.label = "intent"
 
     def test_compare_frames(self) -> None:
-        i = 0
-        for example in TEST_EXAMPLES:
+        for i, example in enumerate(TEST_EXAMPLES):
             self.assertEqual(
                 compare_frames(
                     example["predicted"], example["expected"], tree_based=False
@@ -481,7 +480,6 @@ class MetricsTest(MetricsTestBase):
                     ),
                 ),
             )
-            i += 1
 
     def test_compute_intent_slot_metrics(self) -> None:
         # Test single pair

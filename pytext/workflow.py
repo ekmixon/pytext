@@ -136,7 +136,7 @@ def prepare_task(
         raise ValueError(msg)
 
     if rank == 0:
-        print("\nParameters: {}\n".format(config), flush=True)
+        print(f"\nParameters: {config}\n", flush=True)
     _set_cuda(config.use_cuda_if_available, device_id, world_size)
     _set_fp16(config.use_fp16, rank)
     _set_distributed(
@@ -153,11 +153,9 @@ def prepare_task(
     training_state = None
 
     if config.auto_resume_from_snapshot:
-        # if there are existing checkpoints, resume from the latest one
-        latest_snapshot_path = get_latest_checkpoint_path(
+        if latest_snapshot_path := get_latest_checkpoint_path(
             os.path.dirname(config.save_snapshot_path)
-        )
-        if latest_snapshot_path:
+        ):
             config.load_snapshot_path = latest_snapshot_path
 
     if config.load_snapshot_path:
@@ -244,7 +242,7 @@ def save_and_export(
                         export_config=export_config,
                     )
                 except (RuntimeError, TypeError) as e:
-                    print("Ran into error: {}".format(", ".join(e.args)))
+                    print(f'Ran into error: {", ".join(e.args)}')
                     traceback.print_exception(*sys.exc_info())
                     print(
                         f"The torchscript model at {export_config.export_torchscript_path} could not be saved, skipping for now."
@@ -355,7 +353,7 @@ def _get_data_source(test_path, data_config, field_names, task):
     ):
         if hasattr(source_config, "test_filename"):
             source_config.test_filename = test_path
-        elif hasattr(source_config, "test_path"):
+        else:
             source_config.test_path = test_path
 
         if field_names and hasattr(source_config, "field_names"):
@@ -419,10 +417,7 @@ class LogitsWriter:
 
     def _get_open_options(self):
         """We must open the file in binary model for gzip"""
-        if self.use_gzip:
-            return {"mode": "wb"}
-        else:
-            return {"mode": "w", "encoding": "utf-8"}
+        return {"mode": "wb"} if self.use_gzip else {"mode": "w", "encoding": "utf-8"}
 
     def _write(
         self,
@@ -496,17 +491,12 @@ def get_logits(
                 # multi-encoder output
                 if isinstance(model_outputs, tuple):
                     # prevent breaking behaviour in default case
-                    output_columns = (
-                        range(len(model_outputs))
-                        if not output_columns
-                        else output_columns
-                    )
+                    output_columns = output_columns or range(len(model_outputs))
                     model_outputs = tuple(
                         m.tolist()
                         for i, m in enumerate(model_outputs)
                         if i in output_columns
                     )
-                # single encoder output
                 elif isinstance(model_outputs, list):
                     model_outputs = model_outputs.tolist()
                 else:

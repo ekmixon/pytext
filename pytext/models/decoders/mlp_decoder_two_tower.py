@@ -97,25 +97,25 @@ class MLPDecoderTwoTower(DecoderBase):
         # x[0]: right_text_emb, x[1]: left_text_emb, x[2]: right_dense, x[3]: left_dense
         assert len(x) == 4
 
-        if self.export_type == ExportType.RIGHT or self.export_type == ExportType.NONE:
+        if self.export_type in [ExportType.RIGHT, ExportType.NONE]:
             right_tensor = (
                 torch.cat((x[0], x[2]), 1).half()
                 if precision.FP16_ENABLED
                 else torch.cat((x[0], x[2]), 1).float()
             )
             right_output = self.mlp_for_right(right_tensor)
-            if self.export_type == ExportType.RIGHT:
-                return right_output
+        if self.export_type == ExportType.RIGHT:
+            return right_output
 
-        if self.export_type == ExportType.LEFT or self.export_type == ExportType.NONE:
+        if self.export_type in [ExportType.LEFT, ExportType.NONE]:
             left_tensor = (
                 torch.cat((x[1], x[3]), 1).half()
                 if precision.FP16_ENABLED
                 else torch.cat((x[1], x[3]), 1).float()
             )
             left_output = self.mlp_for_left(left_tensor)
-            if self.export_type == ExportType.LEFT:
-                return left_output
+        if self.export_type == ExportType.LEFT:
+            return left_output
 
         return self.mlp(torch.cat((right_output, left_output), 1))
 

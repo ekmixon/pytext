@@ -37,19 +37,18 @@ class MLPDecoderQueryResponse(DecoderBase):
         layers = []
         current_dim = from_dim
         for dim in hidden_dims or []:
-            layers.append(nn.Linear(current_dim, dim))
-            layers.append(nn.ReLU())
+            layers.extend((nn.Linear(current_dim, dim), nn.ReLU()))
             current_dim = dim
         layers.append(nn.Linear(current_dim, to_dim))
         return nn.Sequential(*layers)
 
     def forward(self, *x: List[torch.Tensor]) -> List[torch.Tensor]:
-        output = []
         assert len(x) == 3
-        output.append(self.mlp_for_response(x[0]))
-        output.append(self.mlp_for_response(x[1]))
-        output.append(self.mlp_for_query(x[2]))
-        return output
+        return [
+            self.mlp_for_response(x[0]),
+            self.mlp_for_response(x[1]),
+            self.mlp_for_query(x[2]),
+        ]
 
     def get_decoder(self) -> List[nn.Module]:
         return [self.mlp_for_response, self.mlp_for_query]

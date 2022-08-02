@@ -51,7 +51,7 @@ class ModelExporterTest(hu.HypothesisTestCase):
                 map_fn = np.vectorize(lambda x: input_vocab[x])
                 input_str = map_fn(input_np)
                 input_np = np.array(input_str, dtype=str)
-                workspace.FeedBlob(input_names[i] + "_str:value", input_np)
+                workspace.FeedBlob(f"{input_names[i]}_str:value", input_np)
             else:
                 workspace.FeedBlob(input_names[i], input_np)
 
@@ -130,9 +130,7 @@ class ModelExporterTest(hu.HypothesisTestCase):
     def _test_task_export_to_caffe2(self, task_class, config):
         task = task_class.from_config(config.task)
         py_model = task.model
-        with tempfile.NamedTemporaryFile(
-            delete=False, suffix=".{}".format("predictor")
-        ) as pred_file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.predictor') as pred_file:
             print(pred_file.name)
             output_names = task.export(py_model, pred_file.name)
             print(output_names)

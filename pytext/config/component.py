@@ -87,7 +87,7 @@ class Registry:
 
 
 class ComponentMeta(type):
-    def __new__(metacls, typename, bases, namespace):
+    def __new__(cls, typename, bases, namespace):
         if "Config" not in namespace:
             # We need to dynamically create a new Config class per
             # instance rather than inheriting a single empty config class
@@ -116,7 +116,7 @@ class ComponentMeta(type):
             ),
             namespace.get("__COMPONENT_TYPE__"),
         )
-        new_cls = super().__new__(metacls, typename, bases, namespace)
+        new_cls = super().__new__(cls, typename, bases, namespace)
 
         new_cls.Config.__COMPONENT_TYPE__ = component_type
         new_cls.Config.__name__ = f"{typename}.Config"
@@ -285,6 +285,4 @@ def get_component_name(obj):
         ret = obj.__name__
     else:
         ret = obj.__class__.__name__
-    if ret.endswith(".Config"):
-        return obj.__COMPONENT__.__name__
-    return ret
+    return obj.__COMPONENT__.__name__ if ret.endswith(".Config") else ret

@@ -100,7 +100,7 @@ class PackedLMData(Data):
         which goes from 0 to seq_len.
         """
         if isinstance(self.tensorizer, BERTTensorizerBase):
-            positions = [index for index in range(seq_len)]
+            positions = list(range(seq_len))
             return {self.tensorizer_name: (tokens, segment_labels, seq_len, positions)}
         elif isinstance(self.tensorizer, TokenTensorizer):
             # dummy token_ranges

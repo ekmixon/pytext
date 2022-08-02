@@ -48,9 +48,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_key_from_data(data, key):
-    if key in data:
-        return data[key]
-    return None
+    return data[key] if key in data else None
 
 
 def create_app(config_filename: str):

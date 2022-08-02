@@ -190,9 +190,7 @@ class AugmentedLSTMUnidirectional(nn.Module):
         binary_mask = (torch.rand(tensor_for_masking.size()) > dropout_probability).to(
             tensor_for_masking.device
         )
-        # Scale mask by 1/keep_prob to preserve output statistics.
-        dropout_mask = binary_mask.float().div(1.0 - dropout_probability)
-        return dropout_mask
+        return binary_mask.float().div(1.0 - dropout_probability)
 
     def forward(
         self,
@@ -265,24 +263,21 @@ class AugmentedLSTMUnidirectional(nn.Module):
                 ):
                     current_length_index += 1
 
-            previous_memory = full_batch_previous_memory[
-                0 : current_length_index + 1
-            ].clone()
-            previous_state = full_batch_previous_state[
-                0 : current_length_index + 1
-            ].clone()
+            previous_memory = full_batch_previous_memory[:current_length_index + 1].clone()
+            previous_state = full_batch_previous_state[:current_length_index + 1].clone()
             timestep_input = sequence_tensor[0 : current_length_index + 1, index]
             timestep_output, memory = self.cell(
                 timestep_input,
                 (previous_state, previous_memory),
-                dropout_mask[0 : current_length_index + 1]
+                dropout_mask[: current_length_index + 1]
                 if dropout_mask is not None
                 else None,
             )
+
             full_batch_previous_memory = full_batch_previous_memory.data.clone()
             full_batch_previous_state = full_batch_previous_state.data.clone()
-            full_batch_previous_memory[0 : current_length_index + 1] = memory
-            full_batch_previous_state[0 : current_length_index + 1] = timestep_output
+            full_batch_previous_memory[:current_length_index + 1] = memory
+            full_batch_previous_state[:current_length_index + 1] = timestep_output
             output_accumulator[0 : current_length_index + 1, index, :] = timestep_output
 
         output_accumulator = pack_padded_sequence(

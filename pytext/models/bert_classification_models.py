@@ -260,10 +260,12 @@ class _EncoderPairwiseModel(BasePairwiseModel):
         return self.decoder(torch.cat(encodings, -1)) if self.decoder else encodings
 
     def save_modules(self, base_path: str = "", suffix: str = ""):
-        modules = {}
-        if not self.shared_encoder:
-            # need to save both encoders
-            modules = {"encoder1": self.encoder1, "encoder2": self.encoder2}
+        modules = (
+            {}
+            if self.shared_encoder
+            else {"encoder1": self.encoder1, "encoder2": self.encoder2}
+        )
+
         self._save_modules(modules, base_path, suffix)
 
     def torchscriptify(self, tensorizers, traced_model, trace_both_encoders):

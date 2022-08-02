@@ -68,7 +68,7 @@ class XLMTensorizerScriptImpl(BERTTensorizerBaseScriptImpl):
             tokens.extend(lookup_ids)
             segment_labels.extend([per_sentence_languages[idx]] * len(lookup_ids))
         seq_len = len(tokens)
-        positions = [i for i in range(seq_len)]
+        positions = list(range(seq_len))
 
         return tokens, segment_labels, seq_len, positions
 
@@ -215,8 +215,7 @@ class XLMTensorizer(BERTTensorizerBase):
         if self.use_language_embeddings:
             lang = row[col]
             assert lang in self.lang2id, f"language {lang} not supported in {row}"
-            lang_id = self.lang2id[lang]
-            return lang_id
+            return self.lang2id[lang]
         else:
             # use En as default
             return self.lang2id.get(self.default_language, 0)

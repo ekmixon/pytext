@@ -103,9 +103,10 @@ class ScriptableEmbeddingList(EmbeddingBase):
                 f"expecting {self.num_emb_modules} embeddings, "
                 + f"but got {len(emb_input)} input"
             )
-        tensors = []
-        for emb, start in zip(self.embeddings_list, self.input_start_indices):
-            tensors.append(emb(emb_input[start]))
+        tensors = [
+            emb(emb_input[start])
+            for emb, start in zip(self.embeddings_list, self.input_start_indices)
+        ]
 
         return torch.cat(tensors, 2)
 

@@ -92,7 +92,7 @@ def marked_up_type_name(arg_type):
         )
         return f"{type_name}[{', '.join(options)}]"
     elif arg_type is typing.Any:
-        return f"Any"
+        return "Any"
     elif issubclass(arg_type, ConfigBase):
         path = canonical_path(arg_type)
         name = arg_type.__name__
@@ -197,11 +197,13 @@ def format_config_rst(config):
         (
             f".. py:currentmodule:: {config.config.__module__}",
             f".. py:class:: {config.config.__name__}",
-            I(1) + ":noindex:",
+            f"{I(1)}:noindex:",
             "",
             I(1)
             + "**Bases:** "
-            + ", ".join(f":class:`{base.name} <{base.path}>`\\ " for base in bases),
+            + ", ".join(
+                f":class:`{base.name} <{base.path}>`\\ " for base in bases
+            ),
             "",
             *(
                 I(1) + line
@@ -229,6 +231,7 @@ def format_config_rst(config):
         )
     )
 
+
     try:
         config_json = json.dumps(
             config_to_json(config.config, config.config()), indent=4
@@ -255,7 +258,7 @@ def format_config_rst(config):
                 (
                     "**Subclasses**",
                     *(
-                        I(1) + f"- :class:`{child.name} <{child.path}>`\\ "
+                        f"{I(1)}- :class:`{child.name} <{child.path}>`\\ "
                         for child in subclasses
                     ),
                 )
@@ -273,7 +276,7 @@ def format_config_rst(config):
                     "\n".join(
                         (
                             ".. warning::",
-                            I(1) + "This config has parameters with no default values.",
+                            f"{I(1)}This config has parameters with no default values.",
                             I(1)
                             + "We aren't yet able to generate functional JSON for it.",
                         )

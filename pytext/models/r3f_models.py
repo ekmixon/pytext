@@ -135,22 +135,21 @@ class R3FPyTextMixin(object):
         return model_output
 
     def forward(self, *args, use_r3f: bool = False, **kwargs):
-        if use_r3f:
-            # forward with the normal model
-            model_output = self.original_forward(
-                *args,
-                **kwargs,
-            )
-
-            # compute noised model outputs
-            noise_model_outputs = self.forward_with_noise(
-                *args,
-                **kwargs,
-            )
-
-            return model_output, noise_model_outputs
-        else:
+        if not use_r3f:
             return self.original_forward(*args, **kwargs)
+        # forward with the normal model
+        model_output = self.original_forward(
+            *args,
+            **kwargs,
+        )
+
+        # compute noised model outputs
+        noise_model_outputs = self.forward_with_noise(
+            *args,
+            **kwargs,
+        )
+
+        return model_output, noise_model_outputs
 
     def get_r3f_loss_terms(
         self, model_outputs, noise_model_outputs, sample_size: int

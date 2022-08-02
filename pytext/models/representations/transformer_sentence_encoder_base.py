@@ -118,12 +118,11 @@ class TransformerSentenceEncoderBase(RepresentationBase):
         elif self.pooling == PoolingMethod.AVG_LAST_LAYER:
             sent_out = encoded_layers[-1]
         else:
-            raise Exception("{} pooling is not supported".format(self.pooling))
+            raise Exception(f"{self.pooling} pooling is not supported")
 
         pad_mask = pad_mask.unsqueeze(2).type_as(encoded_layers[0])
         sent_out = sent_out * pad_mask
-        pooled_output = torch.sum(sent_out, 1) / torch.sum(pad_mask, 1)
-        return pooled_output
+        return torch.sum(sent_out, 1) / torch.sum(pad_mask, 1)
 
     def forward(
         self, input_tuple: Tuple[torch.Tensor, ...], *args

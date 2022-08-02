@@ -174,8 +174,7 @@ class CompositionalMetricReporter(MetricReporter):
         except IndexError:
             builder = TreeBuilder()
             builder.update_tree(SHIFT, "IN:INVALID")
-        tree = builder.finalize_tree(validate_tree=validate_tree)
-        return tree
+        return builder.finalize_tree(validate_tree=validate_tree)
 
     @staticmethod
     def tree_to_metric_node(tree: Tree) -> Node:
@@ -199,7 +198,7 @@ class CompositionalMetricReporter(MetricReporter):
                 if type(child) == Token:
                     idx += len(child.label) + 1
                     node_text_tokens.append(child.label)
-                elif type(child) == Intent or type(child) == Slot:
+                elif type(child) in [Intent, Slot]:
                     res_child = CompositionalMetricReporter.node_to_metrics_node(
                         child, idx
                     )

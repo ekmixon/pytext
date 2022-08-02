@@ -97,8 +97,7 @@ class QueryDocPairwiseRankingModel(PairwiseModel):
         inputs = self.arrange_model_inputs(tensor_dict)
         query = inputs[2]
         query_lengths = query[1]
-        num_queries = query_lengths.shape[0]
-        return num_queries
+        return query_lengths.shape[0]
 
     def forward(
         self,

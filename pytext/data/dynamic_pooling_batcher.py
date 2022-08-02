@@ -83,18 +83,17 @@ class DynamicPoolingBatcher(PoolingBatcher):
             # if past the dynamic period just return
             # the batch size
             self.curr_batch_size = self.scheduler_config.end_batch_size
-        else:
-            if self.curr_epoch % self.scheduler_config.step_size == 0:
-                old_size = self.curr_batch_size
-                new_size = self.compute_dynamic_batch_size(
-                    curr_epoch=self.curr_epoch,
-                    scheduler_config=self.scheduler_config,
-                    curr_steps=self.curr_epoch // self.scheduler_config.step_size,
-                )
+        elif self.curr_epoch % self.scheduler_config.step_size == 0:
+            old_size = self.curr_batch_size
+            new_size = self.compute_dynamic_batch_size(
+                curr_epoch=self.curr_epoch,
+                scheduler_config=self.scheduler_config,
+                curr_steps=self.curr_epoch // self.scheduler_config.step_size,
+            )
 
-                print(f"increasing batch size from {old_size} to {new_size}")
+            print(f"increasing batch size from {old_size} to {new_size}")
 
-                self.curr_batch_size = new_size
+            self.curr_batch_size = new_size
 
     def finished_dynamic(self) -> bool:
         return (
@@ -103,11 +102,10 @@ class DynamicPoolingBatcher(PoolingBatcher):
         )
 
     def get_batch_size(self, stage: Stage) -> int:
-        if stage == Stage.TRAIN:
-            print(f"using dynamic batch size {self.curr_batch_size}")
-            return self.curr_batch_size
-        else:
+        if stage != Stage.TRAIN:
             return self._batch_sizes[stage]
+        print(f"using dynamic batch size {self.curr_batch_size}")
+        return self.curr_batch_size
 
     def batchify(
         self, iterable: Iterable[RawExample], sort_key=None, stage=Stage.TRAIN
@@ -120,8 +118,7 @@ class DynamicPoolingBatcher(PoolingBatcher):
         3. Sort rows, if necessary.
         4. Shuffle the order in which the batches are returned, if necessary.
         """
-        for item in super().batchify(iterable=iterable, sort_key=sort_key, stage=stage):
-            yield item
+        yield from super().batchify(iterable=iterable, sort_key=sort_key, stage=stage)
         if stage == Stage.TRAIN:
             # only step scheduler when in train
             self.step_epoch()

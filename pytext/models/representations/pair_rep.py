@@ -139,9 +139,7 @@ class PairRepresentation(RepresentationBase):
 
         final_reps = []
         for right_rep in right_reps:
-            this_rep = []
-            this_rep.append(left_rep)
-            this_rep.append(right_rep)
+            this_rep = [left_rep, right_rep]
             if self.encode_relations:
                 this_rep.append(torch.abs(left_rep - right_rep))
                 this_rep.append(left_rep * right_rep)

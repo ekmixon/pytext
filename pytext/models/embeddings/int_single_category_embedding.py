@@ -84,9 +84,7 @@ class IntSingleCategoryEmbedding(EmbeddingBase):
 
         if self.pooling_type == "none":
             return self.num_intput_features * self.embedding_dim
-        elif self.pooling_type == "mean":
-            return self.embedding_dim
-        elif self.pooling_type == "max":
+        elif self.pooling_type in ["mean", "max"]:
             return self.embedding_dim
         else:
             raise RuntimeError(f"Pooling type {self.pooling_type} is unsupported.")

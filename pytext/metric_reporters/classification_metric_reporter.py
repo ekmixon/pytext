@@ -169,7 +169,7 @@ class ClassificationMetricReporter(MetricReporter):
             self.aggregate_scores(scores)
 
         for key, val in context.items():
-            if not (isinstance(val, torch.Tensor) or isinstance(val, List)):
+            if not isinstance(val, (torch.Tensor, List)):
                 continue
             if key not in self.all_context:
                 self.all_context[key] = []

@@ -45,9 +45,7 @@ class SentenceEncoder(nn.Module):
 
     def extract_features(self, tokens):
         # support passing in a single sentence
-        torch._assert(
-            tokens.dim() == 1 or tokens.dim() == 2, "tokens should be a 1D or 2D tensor"
-        )
+        torch._assert(tokens.dim() in [1, 2], "tokens should be a 1D or 2D tensor")
         tokens = tokens.view(-1, tokens.shape[-1])
         return self.transformer(tokens)
 
@@ -76,7 +74,7 @@ def rename_state_keys(state, keys_regex, replacement):
     """Rename keys from state that match a regex; replacement can use capture groups"""
     regex = re.compile(keys_regex)
     return {
-        (k if not regex.findall(k) else regex.sub(replacement, k)): v
+        regex.sub(replacement, k) if regex.findall(k) else k: v
         for k, v in state.items()
     }
 
@@ -91,10 +89,7 @@ def rename_component_from_root(state, old_name, new_name):
 def check_state_keys(state, keys_regex):
     """check if keys exists in state using full python paths"""
     regex = re.compile(keys_regex)
-    for k, v in state.items():
-        if regex.findall(k):
-            return True
-    return False
+    return any(regex.findall(k) for k, v in state.items())
 
 
 def merge_input_projection(state):

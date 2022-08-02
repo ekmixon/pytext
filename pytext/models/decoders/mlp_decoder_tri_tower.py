@@ -113,7 +113,7 @@ class MLPDecoderTriTower(DecoderBase):
         # x[0]: right_text_emb, x[1]: middle_text_emb, x[2]: left_text_emb, x[3]: right_dense, x[4]: middle_dense, x[5]: left_dense
         assert len(x) == 6
 
-        if self.export_type == ExportType.RIGHT or self.export_type == ExportType.NONE:
+        if self.export_type in [ExportType.RIGHT, ExportType.NONE]:
             right_tensor = (
                 torch.cat((x[0], x[3]), 1).half()
                 if precision.FP16_ENABLED
@@ -121,9 +121,9 @@ class MLPDecoderTriTower(DecoderBase):
             )
             # len(right_tensor[0]) == right_encoder.embedding_dim + right_dense_dim
             right_output = self.mlp_for_right(right_tensor)
-            if self.export_type == ExportType.RIGHT:
-                return right_output
-        if self.export_type == ExportType.MIDDLE or self.export_type == ExportType.NONE:
+        if self.export_type == ExportType.RIGHT:
+            return right_output
+        if self.export_type in [ExportType.MIDDLE, ExportType.NONE]:
             middle_tensor = (
                 torch.cat((x[1], x[4]), 1).half()
                 if precision.FP16_ENABLED
@@ -131,10 +131,10 @@ class MLPDecoderTriTower(DecoderBase):
             )
             # len(middle_tensor[0]) == middle_encoder.embedding_dim + middle_dense_dim
             middle_output = self.mlp_for_middle(middle_tensor)
-            if self.export_type == ExportType.MIDDLE:
-                return middle_output
+        if self.export_type == ExportType.MIDDLE:
+            return middle_output
 
-        if self.export_type == ExportType.LEFT or self.export_type == ExportType.NONE:
+        if self.export_type in [ExportType.LEFT, ExportType.NONE]:
             left_tensor = (
                 torch.cat((x[2], x[5]), 1).half()
                 if precision.FP16_ENABLED
@@ -142,8 +142,8 @@ class MLPDecoderTriTower(DecoderBase):
             )
             # len(left_tensor[0]) == left_encoder.embedding_dim + left_dense_dim
             left_output = self.mlp_for_left(left_tensor)
-            if self.export_type == ExportType.LEFT:
-                return left_output
+        if self.export_type == ExportType.LEFT:
+            return left_output
 
         return self.mlp(torch.cat((right_output, middle_output, left_output), 1))
 

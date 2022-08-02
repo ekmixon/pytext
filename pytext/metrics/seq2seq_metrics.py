@@ -108,6 +108,4 @@ def compute_f1(hypothesis_list, reference_list, eps=1e-8):
 
     precision = overlapping_count / hypothesis_count if hypothesis_count > 0 else 0
     recall = overlapping_count / reference_count if reference_count > 0 else 0
-    f1 = (2.0 * precision * recall) / (precision + recall + eps)
-
-    return f1
+    return (2.0 * precision * recall) / (precision + recall + eps)

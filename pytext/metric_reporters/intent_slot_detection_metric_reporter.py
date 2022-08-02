@@ -26,7 +26,7 @@ DOC_LABEL_NAMES = "doc_label_names"
 
 
 def create_frame(text, intent_label, slot_names_str, byte_len):
-    frame = Node(
+    return Node(
         label=intent_label,
         span=Span(0, byte_len),
         children={
@@ -35,7 +35,6 @@ def create_frame(text, intent_label, slot_names_str, byte_len):
         },
         text=text,
     )
-    return frame
 
 
 def frame_to_str(frame: Node):
@@ -114,8 +113,8 @@ class IntentSlotMetricReporter(MetricReporter):
                     text,
                     self.doc_label_names[intent_pred],
                     merge_token_labels_to_slot(
-                        token_range[0:seq_len],
-                        [self.word_label_names[p] for p in word_pred[0:seq_len]],
+                        token_range[:seq_len],
+                        [self.word_label_names[p] for p in word_pred[:seq_len]],
                         self.use_bio_labels,
                     ),
                     byte_length(text),

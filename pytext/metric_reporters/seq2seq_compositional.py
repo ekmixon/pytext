@@ -104,12 +104,11 @@ class Seq2SeqCompositionalMetricReporter(Seq2SeqMetricReporter):
         self.all_pred_trees: List = []
 
     def calculate_metric(self):
-        all_metrics = compute_all_metrics(
+        return compute_all_metrics(
             self.create_frame_prediction_pairs(),
             overall_metrics=True,
             calculated_loss=self.calculate_loss(),
         )
-        return all_metrics
 
     def create_frame_prediction_pairs(self):
         return [

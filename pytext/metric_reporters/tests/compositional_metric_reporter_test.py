@@ -12,8 +12,7 @@ from pytext.metrics.intent_slot_metrics import Node, Span
 
 def get_frame(parse: str) -> Node:
     annotation = Annotation(parse)
-    frame = CompositionalMetricReporter.tree_to_metric_node(annotation.tree)
-    return frame
+    return CompositionalMetricReporter.tree_to_metric_node(annotation.tree)
 
 
 class TestCompositionalMetricReporter(TestCase):

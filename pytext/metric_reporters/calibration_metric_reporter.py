@@ -59,6 +59,4 @@ class CalibrationMetricReporter(MetricReporter):
             for (scores, pred, target) in zip(scores_list, preds_list, targets_list)
         ]
 
-        calibration_metrics = compute_calibration(label_predictions)
-
-        return calibration_metrics
+        return compute_calibration(label_predictions)

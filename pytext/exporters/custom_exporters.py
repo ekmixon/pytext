@@ -140,7 +140,7 @@ EXPORTER_MAP = {
 
 
 def get_exporter(name):
-    exporter = EXPORTER_MAP.get(name, None)
-    if not exporter:
+    if exporter := EXPORTER_MAP.get(name, None):
+        return exporter
+    else:
         raise NotImplementedError
-    return exporter

@@ -124,10 +124,9 @@ class RNNGParserBase(BaseModel):
             p_compositional = CompositionalNN(lstm_dim=model_config.lstm.lstm_dim)
         else:
             raise ValueError(
-                "Cannot understand compositional flag {}".format(
-                    model_config.compositional_type
-                )
+                f"Cannot understand compositional flag {model_config.compositional_type}"
             )
+
 
         if tensorizers is not None:
             embedding = EmbeddingList(
@@ -410,10 +409,10 @@ class RNNGParserBase(BaseModel):
 
                 log_probs = F.log_softmax(state.action_p, dim=1)[0]
 
-                for action in self.valid_actions(state):
-                    plans.append(
-                        (state.neg_prob - log_probs[action].item(), state, action)
-                    )
+                plans.extend(
+                    (state.neg_prob - log_probs[action].item(), state, action)
+                    for action in self.valid_actions(state)
+                )
 
             beam = []
             # Take actions to regenerate the beam
@@ -438,26 +437,26 @@ class RNNGParserBase(BaseModel):
                     actions_idx_rev = actions_idx_rev[:-1]
 
                 if (
-                    self.constraints_ignore_loss_for_unsupported
-                    and state.found_unsupported
+                    not self.constraints_ignore_loss_for_unsupported
+                    or not state.found_unsupported
                 ):
-                    pass
-                else:
                     state.action_scores.append(state.action_p)
 
                 self.push_action(state, target_action_idx)
 
                 state.neg_prob = neg_prob
                 beam.append(state)
-            # End for
+                # End for
         # End while
-        assert len(beam) > 0, "How come beam is empty?"
-        assert len(state.stack_stackrnn) == 1, "How come stack len is " + str(
-            len(state.stack_stackrnn)
-        )
-        assert len(state.buffer_stackrnn) == 0, "How come buffer len is " + str(
-            len(state.buffer_stackrnn)
-        )
+        assert beam, "How come beam is empty?"
+        assert (
+            len(state.stack_stackrnn) == 1
+        ), f"How come stack len is {len(state.stack_stackrnn)}"
+
+        assert (
+            len(state.buffer_stackrnn) == 0
+        ), f"How come buffer len is {len(state.buffer_stackrnn)}"
+
 
         # Unsqueeze to add batch dimension before returning.
         return [
@@ -487,8 +486,11 @@ class RNNGParserBase(BaseModel):
         # Can REDUCE if
         # 1. Top of multi-element stack is not an NT, and
         # 2. Two open NTs on stack, or buffer is empty
-        if (is_open_NT and not is_open_NT[-1] and not len(is_open_NT) == 1) and (
-            num_open_NT >= 2 or len(buffer) == 0
+        if (
+            is_open_NT
+            and not is_open_NT[-1]
+            and len(is_open_NT) != 1
+            and ((num_open_NT >= 2 or len(buffer) == 0))
         ):
             assert len(stack) > 0
             valid_actions.append(self.reduce_idx)
@@ -506,11 +508,9 @@ class RNNGParserBase(BaseModel):
                     valid_actions += self.valid_IN_idxs
                 elif last_open_NT.node in self.valid_IN_idxs:
                     if (
-                        self.constraints_no_slots_inside_unsupported
-                        and state.found_unsupported
+                        not self.constraints_no_slots_inside_unsupported
+                        or not state.found_unsupported
                     ):
-                        pass
-                    else:
                         valid_actions += self.valid_SL_idxs
             else:
                 valid_actions += self.valid_IN_idxs
@@ -598,9 +598,7 @@ class RNNGParserBase(BaseModel):
             state.num_open_NT += 1
             state.stack_stackrnn.push(action_embedding, Element(target_action_idx))
         else:
-            assert "not a valid action: {}".format(
-                self.actions_vocab.itos[target_action_idx]
-            )
+            assert f"not a valid action: {self.actions_vocab.itos[target_action_idx]}"
 
     def get_loss(
         self,
@@ -624,8 +622,7 @@ class RNNGParserBase(BaseModel):
             self.loss_func(action, target).view(1)
             for action, target in zip(action_scores_list, target_vars)
         ]
-        total_loss = torch.sum(torch.cat(losses)) if len(losses) > 0 else None
-        return total_loss
+        return torch.sum(torch.cat(losses)) if losses else None
 
     def get_single_pred(self, logits: Tuple[torch.Tensor, torch.Tensor], *args):
         predicted_action_idx, predicted_action_scores = logits

@@ -146,7 +146,7 @@ class BERTTensorizerBaseScriptImpl(TensorizerScriptImpl):
             segment_labels.extend([idx] * len(lookup_ids))
 
         seq_len = len(tokens)
-        positions = [i for i in range(seq_len)]
+        positions = list(range(seq_len))
         return tokens, segment_labels, seq_len, positions
 
     def tensorize(
@@ -216,8 +216,7 @@ class BERTTensorizerBaseScriptImpl(TensorizerScriptImpl):
         per_sentence_tokens: List[List[Tuple[str, int, int]]] = []
 
         if row_text is not None:
-            for text in row_text:
-                per_sentence_tokens.append(self.tokenizer.tokenize(text))
+            per_sentence_tokens.extend(self.tokenizer.tokenize(text) for text in row_text)
         elif row_pre_tokenized is not None:
             for sentence_pre_tokenized in row_pre_tokenized:
                 sentence_tokens: List[Tuple[str, int, int]] = []
@@ -332,8 +331,6 @@ class BERTTensorizerBase(Tensorizer):
     def initialize(self, vocab_builder=None, from_scratch=True):
         # vocab for BERT is already set
         return
-        # we need yield here to make this function a generator
-        yield
 
     def sort_key(self, row):
         return row[2]

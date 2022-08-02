@@ -85,9 +85,9 @@ class ClassificationOutputLayer(OutputLayerBase):
 
         if isinstance(loss, BinaryCrossEntropyLoss):
             cls = BinaryClassificationOutputLayer
-        elif isinstance(loss, MultiLabelSoftMarginLoss):
-            cls = MultiLabelOutputLayer
-        elif isinstance(loss, BinaryCrossEntropyWithLogitsLoss):
+        elif isinstance(
+            loss, (MultiLabelSoftMarginLoss, BinaryCrossEntropyWithLogitsLoss)
+        ):
             cls = MultiLabelOutputLayer
         else:
             cls = MulticlassOutputLayer

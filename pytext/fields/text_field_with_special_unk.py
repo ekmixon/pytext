@@ -117,11 +117,9 @@ class TextFeatureFieldWithSpecialUnk(TextFeatureField):
         else:
             if self.dtype not in self.dtypes:
                 raise ValueError(
-                    "Specified Field dtype {} can not be used with "
-                    "use_vocab=False because we do not know how to numericalize it. "
-                    "Please raise an issue at "
-                    "https://github.com/pytorch/text/issues".format(self.dtype)
+                    f"Specified Field dtype {self.dtype} can not be used with use_vocab=False because we do not know how to numericalize it. Please raise an issue at https://github.com/pytorch/text/issues"
                 )
+
             numericalization_func = self.dtypes[self.dtype]
             # It doesn't make sense to explicitly coerce to a numeric type if
             # the data is sequential, since it's unclear how to coerce padding tokens
@@ -141,9 +139,7 @@ class TextFeatureFieldWithSpecialUnk(TextFeatureField):
         if self.sequential:
             var = var.contiguous()
 
-        if self.include_lengths:
-            return var, lengths
-        return var
+        return (var, lengths) if self.include_lengths else var
 
     def _get_idx(self, item):
         if item in self.vocab.stoi:

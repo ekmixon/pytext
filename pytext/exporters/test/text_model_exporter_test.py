@@ -471,9 +471,7 @@ class ModelExporterTest(hu.HypothesisTestCase):
                 py_model.vocab_to_export(tensorizers),
                 py_model.get_export_output_names(tensorizers),
             )
-            with tempfile.NamedTemporaryFile(
-                delete=False, suffix=".{}".format(".predictor")
-            ) as pred_file:
+            with tempfile.NamedTemporaryFile(delete=False, suffix='..predictor') as pred_file:
                 exporter.export_to_caffe2(py_model, pred_file.name)
                 workspace.ResetWorkspace()
             pred_net = pe.prepare_prediction_net(pred_file.name, CAFFE2_DB_TYPE)
@@ -485,10 +483,7 @@ class ModelExporterTest(hu.HypothesisTestCase):
                     workspace, test_inputs, exporter.input_names, exporter.vocab_map
                 )
                 workspace.RunNetOnce(pred_net)
-                word_output_names = [
-                    "{}:{}".format("word_scores", class_name)
-                    for class_name in word_labels
-                ]
+                word_output_names = [f"word_scores:{class_name}" for class_name in word_labels]
                 py_model.eval()
                 py_outs = py_model(*test_inputs)
                 context = {"seq_lens": test_inputs[-1]}
@@ -572,9 +567,7 @@ class ModelExporterTest(hu.HypothesisTestCase):
             py_model.get_export_output_names(tensorizers),
         )
 
-        with tempfile.NamedTemporaryFile(
-            delete=False, suffix=".{}".format(".predictor")
-        ) as pred_file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix='..predictor') as pred_file:
             exporter.export_to_caffe2(py_model, pred_file.name)
             workspace.ResetWorkspace()
 
@@ -588,12 +581,8 @@ class ModelExporterTest(hu.HypothesisTestCase):
                 workspace, test_inputs, exporter.input_names, exporter.vocab_map
             )
             workspace.RunNetOnce(pred_net)
-            doc_output_names = [
-                "{}:{}".format("doc_scores", class_name) for class_name in doc_labels
-            ]
-            word_output_names = [
-                "{}:{}".format("word_scores", class_name) for class_name in word_labels
-            ]
+            doc_output_names = [f"doc_scores:{class_name}" for class_name in doc_labels]
+            word_output_names = [f"word_scores:{class_name}" for class_name in word_labels]
 
             py_model.eval()
             logits = py_model(*test_inputs)
@@ -651,9 +640,7 @@ class ModelExporterTest(hu.HypothesisTestCase):
             py_model.vocab_to_export(tensorizers),
             py_model.get_export_output_names(tensorizers),
         )
-        with tempfile.NamedTemporaryFile(
-            delete=False, suffix=".{}".format(".predictor")
-        ) as pred_file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix='..predictor') as pred_file:
             output_names = exporter.export_to_caffe2(py_model, pred_file.name)
             workspace.ResetWorkspace()
 
@@ -705,9 +692,7 @@ class ModelExporterTest(hu.HypothesisTestCase):
             py_model.get_export_output_names(tensorizers),
         )
 
-        with tempfile.NamedTemporaryFile(
-            delete=False, suffix=".{}".format(".predictor")
-        ) as pred_file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix='..predictor') as pred_file:
             print(pred_file.name)
             exporter.export_to_caffe2(py_model, pred_file.name)
             workspace.ResetWorkspace()
@@ -721,12 +706,8 @@ class ModelExporterTest(hu.HypothesisTestCase):
                 workspace, test_inputs, exporter.input_names, exporter.vocab_map
             )
             workspace.RunNetOnce(pred_net)
-            doc_output_names = [
-                "{}:{}".format("doc_scores", class_name) for class_name in doc_labels
-            ]
-            word_output_names = [
-                "{}:{}".format("word_scores", class_name) for class_name in word_labels
-            ]
+            doc_output_names = [f"doc_scores:{class_name}" for class_name in doc_labels]
+            word_output_names = [f"word_scores:{class_name}" for class_name in word_labels]
             py_model.eval()
             logits = py_model(*test_inputs)
             context = {"seq_lens": test_inputs[-1]}

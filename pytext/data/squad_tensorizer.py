@@ -158,7 +158,8 @@ class SquadTensorizer(TokenTensorizer):
         ]  # The end index is inclusive. Span = doc_tokens[start:end+1]
 
         if (
-            not (answer_start_token_indices and answer_end_token_indices)
+            not answer_start_token_indices
+            or not answer_end_token_indices
             or self._only_pad(answer_start_token_indices)
             or self._only_pad(answer_end_token_indices)
         ):
@@ -207,10 +208,7 @@ class SquadTensorizer(TokenTensorizer):
         raise NotImplementedError("SquadTensorizer.sort_key() should not be called.")
 
     def _only_pad(self, token_id_list: List[int]) -> bool:
-        for token_id in token_id_list:
-            if token_id != self.SPAN_PAD_IDX:
-                return False
-        return True
+        return all(token_id == self.SPAN_PAD_IDX for token_id in token_id_list)
 
 
 class SquadTensorizerForKD(SquadTensorizer):

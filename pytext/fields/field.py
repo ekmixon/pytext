@@ -35,12 +35,12 @@ def create_fields(fields_config, field_cls_dict):
 def create_label_fields(label_configs, label_cls_dict):
     if not isinstance(label_configs, list):
         label_configs = [label_configs]
-    labels: Dict[str, Field] = {}
-    for label_config in label_configs:
-        labels[label_config._name] = label_cls_dict[label_config._name].from_config(
+    return {
+        label_config._name: label_cls_dict[label_config._name].from_config(
             label_config
         )
-    return labels
+        for label_config in label_configs
+    }
 
 
 class FieldMeta:

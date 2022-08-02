@@ -358,7 +358,7 @@ class DataHandler(Component):
             dataset (TorchText.Dataset)
         """
         to_process = {}
-        to_process.update(self.features)
+        to_process |= self.features
         to_process.update(self.extra_fields)
         if include_label_fields:
             to_process.update(self.labels)
@@ -381,8 +381,7 @@ class DataHandler(Component):
             data (Generator[Dict[str, Any]])
         """
         for idx, row in enumerate(data):
-            preprocessed_row = self.preprocess_row(row)
-            if preprocessed_row:
+            if preprocessed_row := self.preprocess_row(row):
                 preprocessed_row[BatchContext.INDEX] = idx
                 yield preprocessed_row
 
@@ -439,15 +438,10 @@ class DataHandler(Component):
             weights = None
             if feat.use_vocab:
                 pretrained_embeddings = None
-                pretrained_embeddings_path = getattr(
+                if pretrained_embeddings_path := getattr(
                     feat, "pretrained_embeddings_path", None
-                )
-                if pretrained_embeddings_path:
-                    print(
-                        "load pretrained embeddings from {}".format(
-                            pretrained_embeddings_path
-                        )
-                    )
+                ):
+                    print(f"load pretrained embeddings from {pretrained_embeddings_path}")
                     pretrained_embeddings = embeddings_utils.PretrainedEmbedding(
                         pretrained_embeddings_path, feat.lower
                     )
@@ -460,7 +454,7 @@ class DataHandler(Component):
                         feat, train_data, eval_data, test_data, pretrained_embeddings
                     )
                     feat.build_vocab(*vocab_data, min_freq=feat.min_freq)
-                print("{} field's vocabulary size is {}".format(name, len(feat.vocab)))
+                print(f"{name} field's vocabulary size is {len(feat.vocab)}")
 
                 # Initialize pretrained embedding weights.
                 if pretrained_embeddings:
@@ -492,7 +486,7 @@ class DataHandler(Component):
             weights = None
             if label.use_vocab:
                 if not hasattr(label, "vocab"):  # Don't rebuild vocab
-                    print("Building vocab for label {}".format(name))
+                    print(f"Building vocab for label {name}")
                     label.build_vocab(
                         train_data,
                         eval_data,
@@ -501,16 +495,11 @@ class DataHandler(Component):
                     )
                 else:
                     print(f"Vocab for label {name} has been built. Not rebuilding.")
-                print(
-                    "{} field's vocabulary size is {}".format(
-                        name, len(label.vocab.itos)
-                    )
-                )
+                print(f"{name} field's vocabulary size is {len(label.vocab.itos)}")
                 pretrained_embeddings = None
-                pretrained_embeddings_path = getattr(
+                if pretrained_embeddings_path := getattr(
                     label, "pretrained_embeddings_path", None
-                )
-                if pretrained_embeddings_path:
+                ):
                     pretrained_embeddings = embeddings_utils.PretrainedEmbedding(
                         pretrained_embeddings_path
                     )
@@ -560,10 +549,9 @@ class DataHandler(Component):
             print(f"Adding tokens from {feat.vocab_file} to vocab.")
             lowercase_tokens = feat.lower if hasattr(feat, "lower") else False
             assert feat.min_freq == 1
-            vocab_set = self.load_vocab(
+            if vocab_set := self.load_vocab(
                 feat.vocab_file, feat.vocab_size, lowercase_tokens
-            )
-            if vocab_set:
+            ):
                 data.append([vocab_set])
 
         if getattr(feat, "vocab_from_pretrained_embeddings", False):
@@ -659,7 +647,7 @@ class DataHandler(Component):
             textdata.BucketIterator(
                 shard_dataset,
                 batch_size=batch_size,
-                device="cuda:{}".format(torch.cuda.current_device())
+                device=f"cuda:{torch.cuda.current_device()}"
                 if cuda.CUDA_ENABLED
                 else "cpu",
                 sort_within_batch=self.sort_within_batch,
@@ -678,7 +666,7 @@ class DataHandler(Component):
             textdata.Iterator(
                 test_dataset,
                 batch_size=batch_size,
-                device="cuda:{}".format(torch.cuda.current_device())
+                device=f"cuda:{torch.cuda.current_device()}"
                 if cuda.CUDA_ENABLED
                 else "cpu",
                 sort=True,
@@ -702,7 +690,7 @@ class DataHandler(Component):
             textdata.Iterator(
                 ds,
                 batch_size=len(ds) if batch_size is None else batch_size,
-                device="cuda:{}".format(torch.cuda.current_device())
+                device=f"cuda:{torch.cuda.current_device()}"
                 if cuda.CUDA_ENABLED
                 else "cpu",
                 sort=True,
@@ -717,12 +705,12 @@ class DataHandler(Component):
             is_train=False,
             num_batches=num_batches,
         )
+
         if batch_size is not None:
             return it
-        else:
-            for input, _, context in it:
-                # only return the first batch since there is only one
-                return input, context
+        for input, _, context in it:
+            # only return the first batch since there is only one
+            return input, context
 
     def read_from_file(
         self, file_name: str, columns_to_use: Union[Dict[str, int], List[str]]
@@ -737,16 +725,13 @@ class DataHandler(Component):
                 column names or a dict of column name -> column index in the file
         """
         file_name = get_absolute_path(file_name)
-        print("reading data from {}".format(file_name))
+        print(f"reading data from {file_name}")
         if isinstance(columns_to_use, list):
-            columns_to_use = {
-                name: idx
-                for name, idx in zip(columns_to_use, range(len(columns_to_use)))
-            }
+            columns_to_use = dict(zip(columns_to_use, range(len(columns_to_use))))
 
         with PathManager.open(
-            file_name, "r", encoding="utf-8", errors="replace"
-        ) as f_handle:
+                file_name, "r", encoding="utf-8", errors="replace"
+            ) as f_handle:
             csv_reader = csv.reader(f_handle, delimiter="\t", quoting=csv.QUOTE_NONE)
             i = 0
             while True:
@@ -754,7 +739,7 @@ class DataHandler(Component):
                 try:
                     row = next(csv_reader)
                 except csv.Error:
-                    print("ignoring line {}".format(i))
+                    print(f"ignoring line {i}")
                     continue
                 except StopIteration:
                     break
@@ -801,9 +786,7 @@ class DataHandler(Component):
                 batch_label_list = getattr(batch, Target.TARGET_LABEL_FIELD)
                 target = align_target_labels(target, batch_label_list, label_vocab)
             targets.append(target)
-        if len(targets) == 1:
-            return targets[0]
-        return tuple(targets)
+        return targets[0] if len(targets) == 1 else tuple(targets)
 
     def _input_from_batch(self, batch, is_train=True):
         return (

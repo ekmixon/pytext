@@ -72,6 +72,5 @@ class TestAnnotation(TestCase):
                 Annotation(annotation_str, accept_flat_intents_slots=True)
             except ValueError as e:
                 print(e)
-                pass
             else:
                 raise Exception("Annotation error not catched.")

@@ -46,10 +46,7 @@ class MaskedSeq2SeqTopKMetricReporter(Seq2SeqMetricReporter):
     ):
         super().__init__(channels, log_gradient, tensorizers)
         self.model_select_metric_key = model_select_metric_key
-        if model_select_metric_key == "em":
-            self.lower_is_better = False
-        else:
-            self.lower_is_better = True
+        self.lower_is_better = model_select_metric_key != "em"
         self.select_length_beam = select_length_beam
         self.print_length_metrics = print_length_metrics
 

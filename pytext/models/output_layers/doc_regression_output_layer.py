@@ -148,5 +148,4 @@ class RegressionScores(torch.jit.ScriptModule):
         prediction = logits.squeeze(dim=1)
         if self.squash_to_unit_range:
             prediction = torch.sigmoid(prediction)
-        scores: List[float] = prediction.tolist()
-        return scores
+        return prediction.tolist()

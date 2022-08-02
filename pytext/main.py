@@ -124,9 +124,9 @@ def train_model_distributed(config, metric_channels: Optional[List[Channel]]):
         )
     else:
         with tempfile.NamedTemporaryFile(
-            delete=False, suffix=".dist_sync"
-        ) as sync_file:
-            dist_init_method = "file://" + sync_file.name
+                    delete=False, suffix=".dist_sync"
+                ) as sync_file:
+            dist_init_method = f"file://{sync_file.name}"
             metadata = prepare_task_metadata(config)
             spawn(
                 run_single,
@@ -194,22 +194,24 @@ def gen_config_impl(task_name, *args, **kwargs):
         elif len(replace_class_set) > 1:
             raise Exception(f"Multiple component named {opt}: {replace_class_set}")
         replace_class = next(iter(replace_class_set))
-        found = replace_components(root, opt, get_subclasses(replace_class))
-        if found:
-            eprint("INFO - Applying class option:", ".".join(reversed(found)), "=", opt)
-            obj = root
-            for k in reversed(found[1:]):
-                obj = getattr(obj, k)
-            if hasattr(replace_class, "Config"):
-                setattr(obj, found[0], replace_class.Config())
-            else:
-                setattr(obj, found[0], replace_class())
-        else:
+        if not (
+            found := replace_components(
+                root, opt, get_subclasses(replace_class)
+            )
+        ):
             raise Exception(f"Unknown class option: {opt}")
 
+        eprint("INFO - Applying class option:", ".".join(reversed(found)), "=", opt)
+        obj = root
+        for k in reversed(found[1:]):
+            obj = getattr(obj, k)
+        if hasattr(replace_class, "Config"):
+            setattr(obj, found[0], replace_class.Config())
+        else:
+            setattr(obj, found[0], replace_class())
     # Use parameters in kwargs instead of defaults
     for param_path, value in kwargs.items():
-        found = find_param(root, "." + param_path)
+        found = find_param(root, f".{param_path}")
         if len(found) == 1:
             eprint("INFO - Applying parameter option to", found[0], "=", value)
             replace_param(root, found[0].split("."), value)
@@ -280,13 +282,11 @@ def help_config(context, class_name):
     Find all the classes matching `class_name`, and
     pretty-print each matching class field members (non-recursively).
     """
-    found_classes = find_config_class(class_name)
-    if found_classes:
-        for obj in found_classes:
-            pretty_print_config_class(obj)
-            print()
-    else:
+    if not (found_classes := find_config_class(class_name)):
         raise Exception(f"Unknown component name: {class_name}")
+    for obj in found_classes:
+        pretty_print_config_class(obj)
+        print()
 
 
 @main.command(help="Generate a config JSON file with default values.")
@@ -390,7 +390,7 @@ def _get_model_snapshot(context, model_snapshot, use_cuda, use_tensorboard):
                 "if --model-snapshot is set --use-cuda/--no-cuda must be set"
             )
     else:
-        print(f"No model snapshot provided, loading from config")
+        print("No model snapshot provided, loading from config")
         config = context.obj.load_config()
         model_snapshot = config.save_snapshot_path
         use_cuda = config.use_cuda_if_available and getattr(
@@ -459,7 +459,7 @@ def export(context, export_json, model, output_path, output_onnx_path):
         )
         export_saved_model_to_caffe2(model, output_path, output_onnx_path)
     else:
-        for idx in range(0, len(config.export_list)):
+        for idx in range(len(config.export_list)):
             output_path = output_path or config.get_export_caffe2_path(idx)
             output_onnx_path = output_onnx_path or config.get_export_onnx_path(idx)
             print(
@@ -499,15 +499,13 @@ def torchscript_export(context, export_json, model, output_path, quantize, targe
                 "A single export was specified in the command line. Filtering out all other export options"
             )
             export_cfgs = [cfg for cfg in export_cfgs if cfg["target"] == target]
-            if export_cfgs == []:
+            if not export_cfgs:
                 print(
                     "No ExportConfig matches the target name specified in the command line."
                 )
 
         for partial_export_cfg in export_cfgs:
-            if not quantize and not output_path:
-                export_cfg = config_from_json(ExportConfig, partial_export_cfg)
-            else:
+            if quantize or output_path:
                 print(
                     "the export-json config is ignored because export options are found the command line"
                 )
@@ -517,6 +515,8 @@ def torchscript_export(context, export_json, model, output_path, quantize, targe
                     ("export_caffe2_path", "export_onnx_path"),
                 )
                 export_cfg.torchscript_quantize = quantize
+            else:
+                export_cfg = config_from_json(ExportConfig, partial_export_cfg)
             # if config has export_torchscript_path, use export_torchscript_path from config, otherwise keep the default from CLI
             if export_cfg.export_torchscript_path is not None:
                 output_path = export_cfg.export_torchscript_path
@@ -539,7 +539,7 @@ def predict(context, exported_model):
     print(f"Loading model from {exported_model or config.export_caffe2_path}")
     predictor = create_predictor(config, exported_model)
 
-    print(f"Model loaded, reading example JSON from stdin")
+    print("Model loaded, reading example JSON from stdin")
     for line in sys.stdin.readlines():
         input = json.loads(line)
         predictions = predictor(input)
@@ -558,11 +558,10 @@ def predict_py(context, model_file):
     task, train_config, _training_state = load(model_file)
     while True:
         try:
-            line = input(
+            if line := input(
                 "please input a json example, the names should be the same with "
                 + "column_to_read in model training config: \n"
-            )
-            if line:
+            ):
                 pprint.pprint(task.predict([json.loads(line)])[0])
         except EOFError:
             break

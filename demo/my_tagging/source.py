@@ -85,7 +85,8 @@ class AtisSlotsDataSource(RootDataSource):
         field_names = field_names or ["text", "slots"]
         assert (
             len(field_names or []) == 2
-        ), "AtisSlotsDataSource only handles 2 field_names: {}".format(field_names)
+        ), f"AtisSlotsDataSource only handles 2 field_names: {field_names}"
+
 
         self.random_seed = random_seed
         self.validation_split = validation_split
